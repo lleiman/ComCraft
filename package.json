@@ -11,6 +11,7 @@
     "lunar-javascript": "^1.7.7",
     "natalengine": "1.6.1",
     "qimen-dunjia": "3.1.0",
-    "@hnw/date-tibetan": "1.0.2"
+    "@hnw/date-tibetan": "1.0.2",
+    "@photostructure/tz-lookup": "11.7.0"
   }
 }
