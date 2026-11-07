@@ -9,6 +9,8 @@
   "dependencies": {
     "astronomy-engine": "^2.1.19",
     "lunar-javascript": "^1.7.7",
-    "natalengine": "1.6.1"
+    "natalengine": "1.6.1",
+    "qimen-dunjia": "3.1.0",
+    "@hnw/date-tibetan": "1.0.2"
   }
 }
