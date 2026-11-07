@@ -1,0 +1,14 @@
+{
+  "name": "its-your-time-now",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.ts"
+  },
+  "dependencies": {
+    "astronomy-engine": "^2.1.19",
+    "lunar-javascript": "^1.7.7",
+    "natalengine": "1.6.1"
+  }
+}
