@@ -190,3 +190,15 @@
 .v3-sphere>i{display:block;height:5px;background:#3b5140;border-radius:6px;overflow:hidden}
 .v3-sphere>i>em{display:block;height:100%;background:#a7c79c;border-radius:6px;min-width:0}
 @media(max-width:480px){.v3-sphere-grid{grid-template-columns:1fr 1fr;gap:9px 12px}}
+
+/* Google Calendar free/busy */
+.iytn-google-calendar{display:grid;gap:10px;margin-bottom:14px}
+.iytn-google-calendar h3,.iytn-google-calendar p{margin:0}
+.iytn-google-calendar details{min-width:0}
+.iytn-google-calendar summary{color:var(--muted);cursor:pointer}
+.iytn-google-calendar .iytn-google-checkbox{display:flex;align-items:center;gap:8px;min-height:34px;overflow-wrap:anywhere}
+.iytn-google-calendar input[type=checkbox]{inline-size:16px;min-inline-size:16px;block-size:16px;accent-color:var(--lime)}
+.iytn-google-calendar .iytn-google-actions,.iytn-google-calendar .iytn-google-slot{display:flex;align-items:end;gap:8px;flex-wrap:wrap}
+.iytn-google-calendar .iytn-google-slot label{display:grid;gap:4px;color:var(--muted)}
+.iytn-google-calendar .iytn-google-slot input{max-width:10rem}
+.iytn-google-calendar .iytn-google-busy{color:var(--ink);font-variant-numeric:tabular-nums}
