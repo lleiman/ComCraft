@@ -168,7 +168,7 @@ function psychPanel(day,state){
  out+='<p class="v3-small">Заполненность сферы отражает объём внесённых данных, а не её состояние, силу или здоровье.</p>';
  if(stale)out+='<div class="v3-muted-warning">Данные Карты старше недели. Для актуализации повторите передачу.</div>';
  if(due.length)out+='<div class="v3-kicker v3-sub">Проверки на эту дату</div>'+due.map(e=>'<div class="v3-real-task"><span>Срок '+esc(e.due)+'</span><strong>'+esc(e.action)+'</strong></div>').join('');
- if(goals.length)out+='<div class="v3-kicker v3-sub">Активные намерения</div>'+goals.slice(0,3).map(g=>'<div class="v3-real-task"><strong>'+esc(g.title)+'</strong><span>Индекс готовности '+esc(g.readiness)+'/100 · '+esc(g.supportCount)+' опор · '+esc(g.riskCount)+' рисков. Не вероятность.</span></div>').join('');
+ if(goals.length)out+='<div class="v3-kicker v3-sub">Активные намерения</div>'+goals.slice(0,3).map(g=>'<div class="v3-real-task"><strong>'+esc(g.title)+'</strong><span>'+(psychology.source==='conscious-map'?'Активная цель из основной Карты сознания':'Индекс готовности '+esc(g.readiness)+'/100 · '+esc(g.supportCount)+' опор · '+esc(g.riskCount)+' рисков. Не вероятность.')+'</span></div>').join('');
  if(psychology.hypotheses?.length)out+='<details class="v3-secondary-details"><summary>Проверяемые гипотезы ('+psychology.hypotheses.length+')</summary>'+psychology.hypotheses.map(h=>'<p>'+esc(h.title)+'</p>').join('')+'</details>';
  out+='<div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'" target="_blank" rel="noopener noreferrer">Открыть оригинальную карту ↗</a><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Обновить из исследовательской V2 ↗</a><button type="button" data-v3-disconnect>Отключить</button></div>';
  }else{
