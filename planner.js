@@ -1,3 +1,275 @@
+(() => {
+  const api = '/api/google-calendar';
+  const selectedKey = 'iytn_google_calendars_v1';
+  const contextKey = 'iytn_google_meridians_v1';
+  let selected = null;
+  let contextOnly = false;
+  try {
+    const saved = JSON.parse(localStorage.getItem(selectedKey));
+    if (Array.isArray(saved)) selected = saved.filter(value => typeof value === 'string').slice(0, 12);
+    contextOnly = localStorage.getItem(contextKey) === '1';
+  } catch {}
+
+  let status, calendars, day, target, inFlight, sequence = 0;
+  let calendarError = '', notice = '', selectedTime = '', duration = 15;
+
+  function node(tag, text, className) {
+    const element = document.createElement(tag);
+    if (text) element.textContent = text;
+    if (className) element.className = className;
+    return element;
+  }
+
+  function button(text, action) {
+    const element = node('button', text, 'secondary');
+    element.type = 'button';
+    element.addEventListener('click', action);
+    return element;
+  }
+
+  function checkbox(text, checked, action) {
+    const label = node('label', '', 'iytn-google-checkbox');
+    const input = node('input');
+    input.type = 'checkbox';
+    input.checked = checked;
+    input.addEventListener('change', () => {
+      if (action(input.checked) === false) input.checked = !input.checked;
+    });
+    label.append(input, node('span', text));
+    return label;
+  }
+
+  async function request(path, options) {
+    const response = await fetch(api + path, { cache: 'no-store', ...options });
+    const data = await response.json();
+    if (!response.ok) throw Object.assign(new Error(data.error), { status: response.status });
+    return data;
+  }
+
+  function formatter(zone) {
+    return new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  }
+
+  function merge(intervals) {
+    const result = [];
+    for (const interval of intervals) {
+      const last = result.at(-1);
+      if (last && interval.start <= last.end) last.end = Math.max(last.end, interval.end);
+      else result.push({ start: interval.start, end: interval.end });
+    }
+    return result;
+  }
+
+  function checkSlot(result, intervals, clock) {
+    if (!selectedTime) return 'Выберите время, чтобы проверить пересечения.';
+    if (!Number.isInteger(duration) || duration < 1 || duration > 240) return 'Введите длительность от 1 до 240 минут.';
+    const matches = [];
+    for (let at = result.start; at < result.end; at += 60_000) {
+      if (clock.format(at) === selectedTime) matches.push(at);
+    }
+    if (matches.length !== 1) return 'Выберите однозначное время для этой даты и часового пояса.';
+    const start = matches[0], end = start + duration * 60_000;
+    if (end > result.end) return 'Выбранный интервал выходит за пределы дня.';
+    return intervals.some(item => item.start < end && item.end > start)
+      ? 'Пересекается с занятостью в выбранных календарях.'
+      : 'Пересечений в выбранных календарях нет.';
+  }
+
+  function render() {
+    const panel = document.getElementById('iytn-google-calendar');
+    if (!panel || !target) return;
+    const wasOpen = panel.querySelector('details')?.open;
+    panel.replaceChildren(node('h3', 'Google Календарь'));
+    if (notice) panel.append(node('p', notice, 'v3-small'));
+    if (!status) {
+      if (calendarError) panel.append(node('p', calendarError, 'v3-small'), button('Повторить', () => refresh(true)));
+      else panel.append(node('p', 'Проверяем подключение…', 'v3-small'));
+      return;
+    }
+    if (!status.configured) {
+      panel.append(node('p', 'Подключение Google ещё не настроено.', 'v3-small'));
+      return;
+    }
+    if (!status.connected) {
+      const form = node('form');
+      form.method = 'post';
+      form.action = api + '/connect';
+      const connect = node('button', 'Подключить Google', 'secondary');
+      connect.type = 'submit';
+      form.append(connect);
+      panel.append(node('p', 'Планнер читает занятость и серии событий. События Google остаются в режиме чтения.', 'v3-small'), form);
+      return;
+    }
+
+    const settings = node('details');
+    settings.open = Boolean(wasOpen);
+    settings.append(node('summary', 'Календари и правила занятости'));
+    for (const calendar of calendars || []) {
+      settings.append(checkbox(calendar.name, selected?.includes(calendar.id), checked => {
+        if (checked && selected.length >= 12) {
+          notice = 'Можно сверять до 12 календарей одновременно.';
+          render();
+          return false;
+        }
+        selected = checked ? [...selected, calendar.id] : selected.filter(id => id !== calendar.id);
+        try { localStorage.setItem(selectedKey, JSON.stringify(selected)); } catch {}
+        day = null;
+        render();
+        void refresh();
+      }));
+    }
+    settings.append(checkbox('Блоки меридианов — справочно', contextOnly, value => {
+      contextOnly = value;
+      try { localStorage.setItem(contextKey, value ? '1' : '0'); } catch {}
+      render();
+      Array.from(panel.querySelectorAll('details input')).at(-1)?.focus();
+    }));
+    const actions = node('div', '', 'iytn-google-actions');
+    actions.append(button('Обновить', () => refresh(true)), button('Отключить', async () => {
+      if (!window.confirm('Отключить Google Календарь в этом браузере?')) return;
+      try {
+        await request('/disconnect', { method: 'POST' });
+        sequence++;
+        inFlight?.abort();
+        inFlight = null;
+        status = { ...status, connected: false };
+        calendars = day = null;
+        notice = 'Подключение отключено.';
+      } catch (error) {
+        notice = error.message || 'Не удалось отключить подключение.';
+      }
+      render();
+    }));
+    settings.append(actions);
+    panel.append(settings);
+    if (calendarError) {
+      panel.append(node('p', calendarError, 'v3-small'));
+      return;
+    }
+    if (!calendars || !day) {
+      panel.append(node('p', 'Сверяем выбранный день…', 'v3-small'));
+      return;
+    }
+    if (!selected.length) {
+      panel.append(node('p', 'Выберите хотя бы один календарь.', 'v3-small'));
+      return;
+    }
+    const intervals = merge(day.intervals.filter(item => !contextOnly || !item.reference));
+    const clock = formatter(target.zone);
+    const lines = intervals.map(({ start, end }) => {
+      if (start === day.start && end === day.end) return 'Весь день';
+      return clock.format(start) + '–' + (end === day.end ? '24:00' : clock.format(end));
+    });
+    panel.append(node('p', lines.length ? 'Занято · ' + lines.join(', ') : 'В Google нет блоков занятости на этот день.', 'iytn-google-busy'));
+    if (contextOnly && day.intervals.some(item => item.reference)) {
+      panel.append(node('p', 'Серии меридианов показаны в Google и исключены из сверки планнера.', 'v3-small'));
+    }
+
+    const slot = node('div', '', 'iytn-google-slot');
+    const timeLabel = node('label', 'Начало');
+    const time = node('input');
+    time.type = 'time';
+    time.value = selectedTime;
+    timeLabel.append(time);
+    const durationLabel = node('label', 'Минут');
+    const minutes = node('input');
+    minutes.type = 'number';
+    minutes.min = '1';
+    minutes.max = '240';
+    minutes.value = String(duration);
+    durationLabel.append(minutes);
+    const result = node('p', checkSlot(day, intervals, clock), 'v3-small');
+    result.setAttribute('role', 'status');
+    time.oninput = minutes.oninput = () => {
+      selectedTime = time.value;
+      duration = Number(minutes.value);
+      result.textContent = checkSlot(day, intervals, clock);
+    };
+    slot.append(timeLabel, durationLabel);
+    panel.append(slot, result);
+  }
+
+  async function refresh(force = false) {
+    if (!target || !document.getElementById('iytn-google-calendar')) return;
+    if (force) notice = '';
+    const id = ++sequence;
+    inFlight?.abort();
+    const controller = new AbortController();
+    inFlight = controller;
+    const options = { signal: controller.signal };
+    const { date, zone } = target;
+    try {
+      let connection = status;
+      if (!connection || force) connection = await request('/status', options);
+      if (id !== sequence) return;
+      status = connection;
+      if (!connection.connected) {
+        calendars = day = null;
+        calendarError = '';
+        render();
+        return;
+      }
+      let current = calendars;
+      if (!current || force) current = (await request('/calendars', options)).calendars;
+      if (id !== sequence) return;
+      calendars = current;
+      if (selected === null) {
+        selected = current.filter(item => item.primary).map(item => item.id);
+        if (!selected.length && current.length) selected = [current[0].id];
+      } else {
+        selected = selected.filter(calendarId => current.some(item => item.id === calendarId));
+      }
+      const query = new URLSearchParams({ date, tz: zone });
+      for (const calendarId of selected) query.append('calendar', calendarId);
+      const value = await request('/day?' + query, options);
+      if (id !== sequence) return;
+      day = value;
+      calendarError = '';
+      render();
+    } catch (error) {
+      if (id !== sequence || controller.signal.aborted) return;
+      day = null;
+      if (error.status === 401) {
+        status = { ...status, connected: false };
+        calendars = null;
+        notice = error.message;
+      } else {
+        calendarError = error.message || 'Не удалось проверить занятость.';
+      }
+      render();
+    }
+  }
+
+  window.IYTN_GOOGLE_CALENDAR = {
+    update(date, zone) {
+      if (!date || !zone) return;
+      if (date === target?.date && zone === target.zone) {
+        const panel = document.getElementById('iytn-google-calendar');
+        if (panel && !panel.firstChild) render();
+        return;
+      }
+      target = { date, zone };
+      day = null;
+      calendarError = '';
+      render();
+      void refresh();
+    },
+    landing() {
+      const url = new URL(location.href);
+      const outcome = url.searchParams.get('googleCalendar');
+      if (!outcome) return false;
+      notice = outcome === 'connected' ? 'Google Календарь подключён.' : 'Google не подтвердил подключение. Попробуйте ещё раз.';
+      url.searchParams.delete('googleCalendar');
+      history.replaceState(null, '', url);
+      return true;
+    },
+  };
+  setInterval(() => {
+    const panel = document.getElementById('iytn-google-calendar');
+    if (status?.connected && document.visibilityState === 'visible' && panel && !panel.contains(document.activeElement)) void refresh();
+  }, 60_000);
+})();
+
 /* It's Your Time Now · decision calendar and Conscious Map connection · v3 */
 (function(){
 'use strict';
@@ -56,7 +328,7 @@ function calendar(){
  h=h.replace('<div class="calendar-toolbar">','<details class="v3-filter-drawer"><summary>Календарные слои и поиск</summary><div class="calendar-toolbar">');
  h=h.replace('<div class="calendar" id="calendar-grid">','</details><div class="v3-mode-row"><div class="v3-view-switch"><button data-v3-view="month" aria-pressed="'+(view==='month')+'">Месяц</button><button data-v3-view="week" aria-pressed="'+(view==='week')+'">Неделя</button></div><button data-v3-today class="v3-today">Сегодня</button></div><div class="v3-legend"><span><i class="astro-dot good"></i>Традиционно подходит</span><span><i class="astro-dot caution"></i>Осторожнее</span><span><i class="v3-psy-marker"></i>Контрольная точка</span></div><div class="calendar" id="calendar-grid">');
  h=h.replace(/<div class="section flex"><h2>Ваш день<\/h2><span>[\s\S]*?<\/span><\/div>/,'');
- h=h.replace('<div class="card" id="caldayevents">','<div id="astro-month" class="v3-month-highlights"><div class="astro-loading">Составляем календарь...</div></div></section><section class="v3-right"><div id="astro-day" class="astro-day-panel"><div class="astro-loading">Подготавливаем ваш день...</div></div></section></div><details class="v3-reference"><summary>Все расчёты, события и дополнительные учения</summary><div class="card" id="caldayevents">');
+ h=h.replace('<div class="card" id="caldayevents">','<div id="astro-month" class="v3-month-highlights"><div class="astro-loading">Составляем календарь...</div></div></section><section class="v3-right"><section id="iytn-google-calendar" class="card iytn-google-calendar" aria-label="Google Календарь"></section><div id="astro-day" class="astro-day-panel"><div class="astro-loading">Подготавливаем ваш день...</div></div></section></div><details class="v3-reference"><summary>Все расчёты, события и дополнительные учения</summary><div class="card" id="caldayevents">');
  h+='</details>';
  setTimeout(load,0);
  return h;
@@ -242,6 +514,7 @@ function paint(){
  if(!visible())return;
  bind();markSelections();
  const state=st(),model=cache[key(state)];
+ window.IYTN_GOOGLE_CALENDAR.update(state.selected,state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC');
  if(!model){if(error)showError(error);return}
  const idx=Object.fromEntries(model.days.map(d=>[d.date,d]));
  paintGrid(model,state);
@@ -275,5 +548,5 @@ if(importOrigin&&window.opener){
 }
 app.setCalendar(calendar);
 app.setPaint(function(){legacyPaint();paint()});
-app.render();
+if(window.IYTN_GOOGLE_CALENDAR.landing())app.openCalendar();else app.render();
 })();
