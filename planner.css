@@ -182,3 +182,11 @@
 @media(max-width:1080px){.v3-workbench{grid-template-columns: minmax(300px,380px) minmax(0,1fr);gap:14px}.v3-calendar{padding:17px!important}.v3-day-hero,.v3-source-card{padding:17px}}
 @media(max-width:890px){.v3-workbench{grid-template-columns:1fr}.v3-left{position:static}.v3-calendar .day{min-height:69px}.v3-right{margin-top:0}.v3-lead{font-size:13px}.v3-source-card{padding:20px}}
 @media(max-width:520px){.v3-calendar .day{min-height:58px;padding:6px 4px}.v3-calendar .day .astro-day-tone{font-size:8px;margin-top:9px}.v3-month-bar h3{font-size:16px!important}.v3-lenses button{font-size:11px;flex:1}.v3-cats{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px;scrollbar-width:none}.v3-cats button{flex:none}.v3-day-hero h2{font-size:24px}.v3-checkin label{grid-template-columns:88px minmax(0,1fr) 35px}.v3-source-card{padding:17px}.v3-section-top h4{font-size:19px}.v3-month-highlights{padding:16px}}
+
+.v3-sphere-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;margin:11px 0}
+.v3-sphere{min-width:0}
+.v3-sphere>div{display:flex;justify-content:space-between;gap:8px;color:#b8cdb3;font-size:11px;margin-bottom:7px}
+.v3-sphere b{font-weight:600;color:#d9eed0}
+.v3-sphere>i{display:block;height:5px;background:#3b5140;border-radius:6px;overflow:hidden}
+.v3-sphere>i>em{display:block;height:100%;background:#a7c79c;border-radius:6px;min-width:0}
+@media(max-width:480px){.v3-sphere-grid{grid-template-columns:1fr 1fr;gap:9px 12px}}
