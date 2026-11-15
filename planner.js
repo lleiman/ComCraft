@@ -161,6 +161,10 @@ function psychPanel(day,state){
  '<div class="v3-checkin-foot"><span>Самооценка, не диагностический тест</span><button type="button" data-v3-save-checkin>Сохранить</button></div></div>';
  }else out+='<p class="v3-small">На будущую дату состояние не прогнозируется. Сверка станет доступна в этот день.</p>';
  if(connected){
+ const spheres=[['self','Я'],['shadow','Тень'],['relations','Отношения'],['body','Тело'],['meaning','Смыслы'],['lineage','Род'],['work','Работа']];
+ const counts=psychology.stats?.sphereCounts||{},max=Math.max(1,...spheres.map(x=>counts[x[0]]||0));
+ out+='<div class="v3-kicker v3-sub">Покрытие карты · число наблюдений</div><div class="v3-sphere-grid">'+spheres.map(x=>'<div class="v3-sphere"><div><span>'+x[1]+'</span><b>'+(counts[x[0]]||0)+'</b></div><i><em style="width:'+Math.round(100*(counts[x[0]]||0)/max)+'%"></em></i></div>').join('')+'</div>';
+ out+='<p class="v3-small">Заполненность сферы отражает объём внесённых данных, а не её состояние, силу или здоровье.</p>';
  if(stale)out+='<div class="v3-muted-warning">Данные Карты старше недели. Для актуализации повторите передачу.</div>';
  if(due.length)out+='<div class="v3-kicker v3-sub">Проверки на эту дату</div>'+due.map(e=>'<div class="v3-real-task"><span>Срок '+esc(e.due)+'</span><strong>'+esc(e.action)+'</strong></div>').join('');
  if(goals.length)out+='<div class="v3-kicker v3-sub">Активные намерения</div>'+goals.slice(0,3).map(g=>'<div class="v3-real-task"><strong>'+esc(g.title)+'</strong><span>Индекс готовности '+esc(g.readiness)+'/100 · '+esc(g.supportCount)+' опор · '+esc(g.riskCount)+' рисков. Не вероятность.</span></div>').join('');
@@ -252,7 +256,7 @@ function sanitiseSnapshot(value){
   goals:goals.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),readiness:Math.max(0,Math.min(100,Number(x.readiness)||0)),supportCount:Math.max(0,Math.min(999,Number(x.supportCount)||0)),riskCount:Math.max(0,Math.min(999,Number(x.riskCount)||0))})),
   experiments:experiments.map(x=>({id:truncate(x.id,80),action:truncate(x.action,220),due:isValidDate(x.due)?x.due:'',hypothesisId:truncate(x.hypothesisId,80)})),
   hypotheses:hypotheses.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),expectedBy:isValidDate(x.expectedBy)?x.expectedBy:''})),
-  stats:{evidenceCount:Math.max(0,Math.min(99999,Number(value.stats?.evidenceCount)||0)),experimentsOpen:Math.max(0,Math.min(99999,Number(value.stats?.experimentsOpen)||0)),hypothesesActive:Math.max(0,Math.min(99999,Number(value.stats?.hypothesesActive)||0))}};
+  stats:{evidenceCount:Math.max(0,Math.min(99999,Number(value.stats?.evidenceCount)||0)),experimentsOpen:Math.max(0,Math.min(99999,Number(value.stats?.experimentsOpen)||0)),hypothesesActive:Math.max(0,Math.min(99999,Number(value.stats?.hypothesesActive)||0)),sphereCounts:Object.fromEntries(['self','shadow','relations','body','meaning','lineage','work'].map(k=>[k,Math.max(0,Math.min(99999,Number(value.stats?.sphereCounts?.[k])||0))]))}};
 }
 if(new URLSearchParams(location.search).get('connect')==='conscious-map-v2'&&window.opener){
  window.addEventListener('message',event=>{
