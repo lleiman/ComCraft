@@ -1,0 +1,57 @@
+/* It's Your Time Now · day-level astrology planner */
+.astro-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:22px 0 16px;padding:19px 21px;border:1px solid #49634b;border-radius:18px;background:#1a2a20}
+.astro-toolbar strong{display:block;font-size:17px;color:#edf3e7;font-family:Manrope,sans-serif;margin-bottom:6px}
+.astro-toolbar p{font-size:12px;line-height:1.65;color:#aebfae;margin:0;max-width:390px}
+.astro-tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.astro-tabs button{border-radius:100px;padding:9px 12px;color:#c1d1bc;background:#25392a;border:1px solid #48644c;font-size:11px}
+.astro-tabs button[aria-pressed="true"]{color:#172117;background:#d5ee9b;border-color:#d5ee9b;font-weight:700}
+.astro-legend{display:flex;flex-wrap:wrap;gap:15px;padding:13px 0 3px;color:#b1c4b4;font-size:11px}
+.astro-legend span{display:flex;gap:6px;align-items:center}
+.astro-dot{height:8px;width:8px;border-radius:100%;display:inline-block;background:#748878}
+.astro-dot.good{background:#bad68b}.astro-dot.caution{background:#dcb781}
+.day.astro-good{box-shadow:inset 0 3px 0 #9ebe7f}.day.astro-caution{box-shadow:inset 0 3px 0 #c59c6e}
+.day.astro-neutral{box-shadow:inset 0 3px 0 #6e8778}
+.day .astro-day-tone{display:block;margin-top:5px;color:#c7d9bc;font-size:10px;font-weight:600;letter-spacing:-.02em}
+.day.astro-caution .astro-day-tone{color:#e9bf88}
+.day.astro-good .astro-day-tone{color:#cce5ac}
+.day.astro-good.selected,.day.astro-caution.selected{border:1px solid #d5ee9b}
+.astro-day-panel{margin:18px 0 12px;background:#1b2d22;border:1px solid #455f49;border-radius:20px;padding:24px}
+.astro-day-top{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.astro-day-top h3{font:650 clamp(20px,2.9vw,27px)/1.25 Manrope,sans-serif;letter-spacing:-.035em;margin:9px 0}
+.astro-day-top p{font-size:12px;line-height:1.75;color:#bccdbb;margin:0;max-width:640px}
+.astro-status{border:1px solid #6c8670;border-radius:100px;padding:7px 11px;color:#d5e4d0;font-size:11px;white-space:nowrap}
+.astro-status.good{border-color:#86ad78;color:#d5ee9b}
+.astro-status.caution{border-color:#ab8863;color:#e7bc8c}
+.astro-facts{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 10px}
+.astro-facts span{border:1px solid #455e47;background:#23382a;color:#dbebd4;padding:8px 10px;border-radius:8px;font-size:11px}
+.astro-section-label{font-size:10px;font-weight:800;letter-spacing:.17em;color:#d5ee9b;text-transform:uppercase;margin:25px 0 12px}
+.astro-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.astro-action{border:1px solid #425b47;background:#1e3024;border-radius:13px;padding:16px;min-width:0}
+.astro-action h4{font:650 16px Manrope,sans-serif;margin:8px 0 12px}
+.astro-action .astro-action-type{font-size:10px;text-transform:uppercase;color:#a8bd9e;letter-spacing:.12em}
+.astro-action .astro-action-type.good{color:#d4eeaf}
+.astro-action .astro-action-type.caution{color:#e3b886}
+.astro-action dl{margin:0}
+.astro-action dt{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:750;color:#c8dca9;margin:12px 0 5px}
+.astro-action dt.avoid{color:#e7b68c}
+.astro-action dd{margin:0;font-size:12px;color:#d4e0ce;line-height:1.65}
+.astro-action details{border-top:1px solid #3d5442;margin-top:13px;padding-top:10px;color:#b7c8b4;font-size:11px;line-height:1.65}
+.astro-action summary{cursor:pointer;color:#d5ee9b}
+.astro-action details p{margin:7px 0}
+.astro-timeline{display:grid;gap:8px}
+.astro-timeline-item{border-left:2px solid #a5c18b;padding:7px 0 7px 13px;font-size:12px;color:#dfedd4;line-height:1.6}
+.astro-timeline-item small{display:block;color:#a8bca9;font-size:11px}
+.astro-task{padding:12px 14px;border:1px solid #52654e;border-radius:10px;margin:10px 0;font-size:12px;color:#e1ebd6}
+.astro-task small{display:block;font-size:11px;color:#bdceb7;margin-top:5px}
+.astro-notice{font-size:11px;line-height:1.75;color:#aabca8;border-top:1px solid #3e5341;margin-top:20px;padding-top:13px}
+.astro-month-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.astro-month-item{text-align:left;padding:13px 15px;display:flex;gap:11px;align-items:flex-start;background:#203328;border:1px solid #455f49;border-radius:11px;color:#dbe5d8}
+.astro-month-item:hover{background:#294332}
+.astro-month-item strong{display:block;font-size:12px;line-height:1.45}
+.astro-month-item small{display:block;font-size:10px;color:#9fb59e;margin-top:6px}
+.astro-month-item time{font-size:15px;color:#d5ee9b;font-weight:700;min-width:23px}
+.astro-loading{color:#b4c7b1;font-size:13px;padding:18px 0}
+.astro-advanced{border-top:1px solid #40583f;margin-top:16px;padding-top:13px}
+.astro-advanced>summary{color:#d5ee9b;font-size:12px;cursor:pointer}
+.astro-advanced .calendar-toolbar{margin-top:14px}
+@media(max-width:650px){.astro-toolbar{padding:16px}.astro-actions,.astro-month-grid{grid-template-columns:1fr}.astro-day-panel{padding:18px}.astro-tabs{width:100%}.astro-tabs button{font-size:10px;padding:8px 10px}.day .astro-day-tone{font-size:9px;letter-spacing:-.04em}.astro-legend{gap:10px}.astro-day-top h3{font-size:21px}}
