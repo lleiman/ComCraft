@@ -2,6 +2,6 @@ FROM oven/bun:1.2.23
 WORKDIR /app
 COPY package.json ./
 RUN bun install --production
-COPY index.ts ./
+COPY index.ts planner-engine.ts planner.js planner.css ./
 EXPOSE 3000
 CMD ["bun", "run", "index.ts"]
