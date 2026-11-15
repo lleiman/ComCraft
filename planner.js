@@ -13,7 +13,7 @@
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function state(){return app.state();}
   function monthOf(st){const base=new Date(),d=new Date(base.getFullYear(),base.getMonth()+(st.monthOffset||0),1);return String(d.getFullYear())+'-'+String(d.getMonth()+1).padStart(2,'0');}
-  function key(st){return monthOf(st)+'|'+(st.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC');}
+  function key(st){return monthOf(st)+'|'+(st.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC')+'|'+(st.birth||'')+'|'+(st.birthtime||'')+'|'+(st.birthZone||'');}
   function dayStatus(day){const cat=active==='all'?null:day.categories.find(c=>c.id===active);return cat?cat.level:day.overall;}
   function isVisible(){return state().page==='calendar'&&!!document.getElementById('astro-day');}
   function header(){
@@ -48,7 +48,7 @@
     busy[k]=true;
     try{
       const month=monthOf(st),tz=st.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
-      const res=await fetch('/api/astro-planner?month='+encodeURIComponent(month)+'&tz='+encodeURIComponent(tz));
+      const res=await fetch('/api/astro-planner?month='+encodeURIComponent(month)+'&tz='+encodeURIComponent(tz),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({birth:st.birth||'',birthtime:st.birthtime||'',birthZone:st.birthZone||''})});
       const body=await res.json();
       if(!res.ok||!Array.isArray(body.days))throw Error(body.error||'Ошибка расчёта календаря');
       cache[k]=body;lastError='';
@@ -87,6 +87,7 @@
     let out='<div class="astro-day-top"><div><div class="tiny">'+esc(pretty(day.date))+' · '+esc(model.timeZone)+'</div><h3>'+esc(heading)+'</h3><p>'+esc(day.summary)+'</p></div><div class="astro-status '+status+'">'+esc(names[status]||status)+'</div></div>';
     out+='<div class="astro-facts">'+reasons+'<span>Солнце: '+esc(day.sun.sign)+'</span>'+(day.mercury.retrograde?'<span>Меркурий: ретроградный</span>':'')+'</div>';
     if(todayEvents)out+='<div class="astro-section-label">Астрономические события дня</div><div class="astro-timeline">'+todayEvents+'</div>';
+    if(model.natal){out+='<div class="astro-section-label">Ваши натальные транзиты</div><p class="note">Натальное Солнце: '+esc(model.natal.sunSign)+' · натальная Луна: '+esc(model.natal.moonSign)+'.</p>';if(day.personalAspects&&day.personalAspects.length)out+='<div class="astro-timeline">'+day.personalAspects.map(e=>'<div class="astro-timeline-item"><strong>'+esc(e.title)+'</strong><small>'+esc(e.explanation)+' Орб: '+esc(e.orb)+'°</small></div>').join('')+'</div>';else out+='<p class="note">В этот день нет точных основных аспектов к натальному Солнцу и Луне в принятом орбисе.</p>';}else out+='<p class="astro-notice">Для персональных транзитов укажите в профиле дату, время и часовой пояс рождения.</p>';
     out+=goalsHtml(day,st);
     out+='<div class="astro-section-label">Действия и ограничения</div><div class="astro-actions">'+cats.map(renderCard).join('')+'</div>';
     out+='<p class="astro-notice">'+esc(model.warning)+' Фаза и знак Луны вычислены астрономически, рекомендации по знакам и Хуанли представляют традиционные трактовки. Точное время указано только для рассчитанных переходов.</p>';
