@@ -153,7 +153,7 @@ function psychPanel(day,state){
  const mayEdit=day.date<=todayIso();
  const summary=psychAdvice(day);
  const stale=psychology?.exportedAt&&Date.now()-psychology.exportedAt>7*86400000;
- let out='<div class="v3-section-top"><div><div class="v3-kicker">01 · НАБЛЮДЕНИЕ / ПСИХОЛОГИЯ</div><h4>Карта сознания · психологический слой</h4></div><span class="v3-chip '+(connected?'connected':'')+'">'+(connected?'Связана вручную':'Локальная сверка')+'</span></div>';
+ let out='<div class="v3-section-top"><div><div class="v3-kicker">01 · НАБЛЮДЕНИЕ / ПСИХОЛОГИЯ</div><h4>Карта сознания · психологический слой</h4></div><span class="v3-chip '+(connected?'connected':'')+'">'+(connected?(psychology.source==='conscious-map'?'Основная карта':'Исследовательская V2'):'Локальная сверка')+'</span></div>';
  out+='<div class="v3-psych-focus"><div class="v3-kicker">Практический шаг</div><strong>'+esc(summary.title)+'</strong><p>'+esc(summary.action)+'</p><div class="v3-avoid-text">Следует избегать: '+esc(summary.avoid)+'</div><details><summary>Основание рекомендации</summary><p>'+esc(summary.why)+'</p></details></div>';
  if(mayEdit){
  const vals=checkin||{energy:3,stress:3,focus:3};
@@ -249,19 +249,21 @@ function paint(){
  highlightMonth(model,state);
 }
 function sanitiseSnapshot(value){
- if(!value||value.version!==1||value.source!=='conscious-map-v2')throw Error('Неподдерживаемый формат');
+ if(!value||value.version!==1||!['conscious-map-v2','conscious-map'].includes(value.source))throw Error('Неподдерживаемый формат');
  const goals=Array.isArray(value.goals)?value.goals.slice(0,12):[];
  const experiments=Array.isArray(value.experiments)?value.experiments.slice(0,20):[];
  const hypotheses=Array.isArray(value.hypotheses)?value.hypotheses.slice(0,10):[];
- return {version:1,source:'conscious-map-v2',exportedAt:Number(value.exportedAt)||Date.now(),
+ return {version:1,source:value.source,exportedAt:Number(value.exportedAt)||Date.now(),
   goals:goals.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),readiness:Math.max(0,Math.min(100,Number(x.readiness)||0)),supportCount:Math.max(0,Math.min(999,Number(x.supportCount)||0)),riskCount:Math.max(0,Math.min(999,Number(x.riskCount)||0))})),
   experiments:experiments.map(x=>({id:truncate(x.id,80),action:truncate(x.action,220),due:isValidDate(x.due)?x.due:'',hypothesisId:truncate(x.hypothesisId,80)})),
   hypotheses:hypotheses.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),expectedBy:isValidDate(x.expectedBy)?x.expectedBy:''})),
   stats:{evidenceCount:Math.max(0,Math.min(99999,Number(value.stats?.evidenceCount)||0)),experimentsOpen:Math.max(0,Math.min(99999,Number(value.stats?.experimentsOpen)||0)),hypothesesActive:Math.max(0,Math.min(99999,Number(value.stats?.hypothesesActive)||0)),sphereCounts:Object.fromEntries(['self','shadow','relations','body','meaning','lineage','work'].map(k=>[k,Math.max(0,Math.min(99999,Number(value.stats?.sphereCounts?.[k])||0))]))}};
 }
-if(new URLSearchParams(location.search).get('connect')==='conscious-map-v2'&&window.opener){
+const connection=new URLSearchParams(location.search).get('connect');
+const importOrigin=connection==='conscious-map-v2'?MAP_ORIGIN:connection==='conscious-map-original'?ORIGINAL_MAP_ORIGIN:null;
+if(importOrigin&&window.opener){
  window.addEventListener('message',event=>{
-  if(event.origin!==MAP_ORIGIN||event.source!==window.opener||event.data?.type!=='CONSCIOUS_MAP_TO_PLANNER_V1')return;
+  if(event.origin!==importOrigin||event.source!==window.opener||event.data?.type!=='CONSCIOUS_MAP_TO_PLANNER_V1')return;
   try{
    const data=sanitiseSnapshot(event.data.payload);
    psychology=data;localStorage.setItem(PSY_KEY,JSON.stringify(data));
@@ -269,7 +271,7 @@ if(new URLSearchParams(location.search).get('connect')==='conscious-map-v2'&&win
    lens='all';savePref();app.openCalendar();
   }catch(e){console.error('Connection rejected',e)}
  },{once:false});
- window.opener.postMessage({type:'IYTN_PLANNER_READY'},MAP_ORIGIN);
+ window.opener.postMessage({type:'IYTN_PLANNER_READY'},importOrigin);
 }
 app.setCalendar(calendar);
 app.setPaint(function(){legacyPaint();paint()});
