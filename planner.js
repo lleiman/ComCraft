@@ -5,6 +5,7 @@ const app=window.IYTN_PLANNER_BRIDGE;
 if(!app){console.error('Missing IYTN bridge');return}
 const legacyCalendar=app.calendar(),legacyPaint=app.paint();
 const MAP_ORIGIN='https://conscious-map-v2-production.up.railway.app';
+const ORIGINAL_MAP_ORIGIN='https://consciousness-map-production-ce66.up.railway.app';
 const PSY_KEY='iytn_psych_snapshot_v1',CHECKIN_KEY='iytn_daily_checkin_v1',LENS_KEY='iytn_planner_lens_v3';
 const tabs=[['all','Все сферы'],['work','Работа'],['money','Финансы'],['creative','Творчество'],['relationship','Отношения'],['learning','Учёба'],['rest','Восстановление']];
 const levels={good:'Подходит по традиции',neutral:'Без особого акцента',caution:'По традиции осторожнее'};
@@ -152,7 +153,7 @@ function psychPanel(day,state){
  const mayEdit=day.date<=todayIso();
  const summary=psychAdvice(day);
  const stale=psychology?.exportedAt&&Date.now()-psychology.exportedAt>7*86400000;
- let out='<div class="v3-section-top"><div><div class="v3-kicker">01 · НАБЛЮДЕНИЕ / ПСИХОЛОГИЯ</div><h4>Карта сознания</h4></div><span class="v3-chip '+(connected?'connected':'')+'">'+(connected?'Связана вручную':'Локальная сверка')+'</span></div>';
+ let out='<div class="v3-section-top"><div><div class="v3-kicker">01 · НАБЛЮДЕНИЕ / ПСИХОЛОГИЯ</div><h4>Карта сознания · психологический слой</h4></div><span class="v3-chip '+(connected?'connected':'')+'">'+(connected?'Связана вручную':'Локальная сверка')+'</span></div>';
  out+='<div class="v3-psych-focus"><div class="v3-kicker">Практический шаг</div><strong>'+esc(summary.title)+'</strong><p>'+esc(summary.action)+'</p><div class="v3-avoid-text">Следует избегать: '+esc(summary.avoid)+'</div><details><summary>Основание рекомендации</summary><p>'+esc(summary.why)+'</p></details></div>';
  if(mayEdit){
  const vals=checkin||{energy:3,stress:3,focus:3};
@@ -169,9 +170,9 @@ function psychPanel(day,state){
  if(due.length)out+='<div class="v3-kicker v3-sub">Проверки на эту дату</div>'+due.map(e=>'<div class="v3-real-task"><span>Срок '+esc(e.due)+'</span><strong>'+esc(e.action)+'</strong></div>').join('');
  if(goals.length)out+='<div class="v3-kicker v3-sub">Активные намерения</div>'+goals.slice(0,3).map(g=>'<div class="v3-real-task"><strong>'+esc(g.title)+'</strong><span>Индекс готовности '+esc(g.readiness)+'/100 · '+esc(g.supportCount)+' опор · '+esc(g.riskCount)+' рисков. Не вероятность.</span></div>').join('');
  if(psychology.hypotheses?.length)out+='<details class="v3-secondary-details"><summary>Проверяемые гипотезы ('+psychology.hypotheses.length+')</summary>'+psychology.hypotheses.map(h=>'<p>'+esc(h.title)+'</p>').join('')+'</details>';
- out+='<div class="v3-link-actions"><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Обновить из Карты сознания ↗</a><button type="button" data-v3-disconnect>Отключить</button></div>';
+ out+='<div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'" target="_blank" rel="noopener noreferrer">Открыть оригинальную карту ↗</a><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Обновить из исследовательской V2 ↗</a><button type="button" data-v3-disconnect>Отключить</button></div>';
  }else{
- out+='<div class="v3-connect"><p>Свяжите локальную «Карту сознания V2», чтобы видеть свои цели и назначенные проверки рядом с календарём. Дневник и результаты тестов автоматически не передаются.</p><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Открыть Карту сознания ↗</a></div>';
+ out+='<div class="v3-connect"><p>Свяжите локальную «Карту сознания V2», чтобы видеть свои цели и назначенные проверки рядом с календарём. Дневник и результаты тестов автоматически не передаются.</p><div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'" target="_blank" rel="noopener noreferrer">Открыть оригинальную карту ↗</a><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Связать исследовательскую V2 ↗</a></div></div>';
  }
  return out;
 }
