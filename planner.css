@@ -55,3 +55,130 @@
 .astro-advanced>summary{color:#d5ee9b;font-size:12px;cursor:pointer}
 .astro-advanced .calendar-toolbar{margin-top:14px}
 @media(max-width:650px){.astro-toolbar{padding:16px}.astro-actions,.astro-month-grid{grid-template-columns:1fr}.astro-day-panel{padding:18px}.astro-tabs{width:100%}.astro-tabs button{font-size:10px;padding:8px 10px}.day .astro-day-tone{font-size:9px;letter-spacing:-.04em}.astro-legend{gap:10px}.astro-day-top h3{font-size:21px}}
+
+/* Planner v3: month/agenda workbench, inspired by Notion Calendar, Timepage and Structured */
+.v3-overline{font-size:10px;letter-spacing:.19em;font-weight:700;color:#bfdc9f}
+.v3-lead{max-width:850px;margin-bottom:0}
+.v3-top-tools{display:grid;gap:12px;margin-top:22px;margin-bottom:19px}
+.v3-lenses,.v3-cats{display:flex;gap:7px;flex-wrap:wrap}
+.v3-lenses button,.v3-cats button{border:1px solid #425744;background:#1a2b21;color:#bbccb8;border-radius:999px;min-height:36px;padding:9px 14px;font-size:12px}
+.v3-lenses button[aria-pressed=true]{background:#d5ee9b;border-color:#d5ee9b;color:#1a271c;font-weight:750}
+.v3-cats button{padding:8px 12px;font-size:11px;min-height:32px;background:#14251b}
+.v3-cats button[aria-pressed=true]{background:#304b33;border-color:#87a97a;color:#e2f0d8}
+.v3-workbench{display:grid;grid-template-columns:minmax(325px,410px) minmax(0,1fr);gap:20px;align-items:start}
+.v3-left{min-width:0;position:sticky;top:15px;align-self:start;display:grid;gap:16px}
+.v3-right{min-width:0}
+.v3-calendar{padding:23px!important;background:#1b2a21;border-color:#415645!important;box-shadow:0 22px 60px #08150d36}
+.v3-month-bar{margin-bottom:10px}
+.v3-month-bar h3{font-size:19px!important;letter-spacing:-.04em;color:#e7efdb}
+.v3-month-bar button{border-radius:12px;min-width:36px}
+.v3-mode-row{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:14px}
+.v3-view-switch{display:flex;gap:3px;border:1px solid #405d43;background:#14241b;padding:3px;border-radius:10px}
+.v3-view-switch button{font-size:11px;color:#b6c9b2;background:transparent;border:0;border-radius:7px;padding:7px 12px}
+.v3-view-switch button[aria-pressed=true]{background:#38523b;color:#e4f0df}
+.v3-today{border:0;background:transparent;color:#cce4ac;font-size:12px;text-decoration:underline;text-underline-offset:4px}
+.v3-legend{font-size:10px;display:flex;flex-wrap:wrap;gap:10px 12px;color:#acbfa9;margin:16px 0 3px}
+.v3-legend span{display:flex;gap:6px;align-items:center}
+.v3-psy-marker{display:inline-block;width:8px;height:8px;background:#95b5da;border-radius:3px}
+.v3-calendar .calendar{gap:5px}
+.v3-calendar .weekday{font-size:11px;color:#97ac96}
+.v3-calendar .day{min-height:70px;padding:8px 7px;background:#1e3226;border-radius:9px;position:relative;transition:background .14s,border-color .14s}
+.v3-calendar .day:hover{background:#2c4834}
+.v3-calendar .day.blank{background:transparent}
+.v3-calendar .day.selected{background:#3a553b;border:1px solid #d5ee9b}
+.v3-calendar .day.today{font-weight:800}
+.v3-calendar .day .eventmarker{display:none}
+.v3-calendar .day .astro-day-tone{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:10px;max-width:100%}
+.v3-calendar .day .v3-day-psych{position:absolute;right:7px;top:5px;color:#95c1e5;font-size:11px}
+.v3-calendar .day.v3-psy-due{outline:1px solid #77a3c3;outline-offset:-2px}
+.v3-calendar .day[hidden]{display:none!important}
+.v3-calendar .day.astro-good{box-shadow:inset 0 2px 0 #a3c58b}
+.v3-calendar .day.astro-caution{box-shadow:inset 0 2px 0 #c9a271}
+.v3-calendar .day.astro-neutral{box-shadow:inset 0 2px 0 #526c58}
+.v3-calendar .day.astro-good.selected,.v3-calendar .day.astro-caution.selected{border-color:#d5ee9b}
+.v3-calendar .calendar.v3-week{margin-bottom:17px}
+.v3-calendar #cal-hint{font-size:10px;color:#7e977e;margin-top:10px;line-height:1.5}
+.v3-filter-drawer{margin-top:13px;border-top:1px solid #354d3a;padding-top:10px}
+.v3-filter-drawer>summary{font-size:11px;color:#91a991;cursor:pointer}
+.v3-filter-drawer .calendar-toolbar{margin-top:12px}
+.v3-filter-drawer .calendarfilters{max-height:160px;overflow:auto}
+.v3-month-highlights{background:#192b20;border:1px solid #415b46;border-radius:15px;padding:20px}
+.v3-month-small-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px}
+.v3-month-small-header b{font-size:14px;color:#e2eed8}
+.v3-month-small-header span{font-size:11px;color:#aebea8}
+.v3-month-tasks{display:grid;gap:5px}
+.v3-month-tasks button{width:100%;border:0;border-bottom:1px solid #2e4935;background:none;color:#c9d9c4;display:flex;gap:12px;text-align:left;align-items:flex-start;padding:10px 3px;font-size:12px;line-height:1.5}
+.v3-month-tasks button:hover{color:#e9f4e0}
+.v3-month-tasks time{color:#d5ee9b;flex:none;font:600 12px Manrope}
+.v3-month-highlights .v3-small{margin-bottom:0}
+.v3-right .astro-day-panel{margin:0;padding:0;background:transparent;border:0;border-radius:0}
+.v3-day-hero{border:1px solid #496648;border-radius:18px;background:radial-gradient(circle at 95% 9%,#45694a,transparent 65%),linear-gradient(135deg,#283f2e,#192b21);padding:26px;margin-bottom:15px;min-height:192px}
+.v3-day-hero-top{display:flex;justify-content:space-between;gap:13px;align-items:center}
+.v3-kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#c5dba9;font-weight:700;line-height:1.5}
+.v3-day-nav{display:flex;gap:7px}
+.v3-day-nav button{width:34px;height:34px;border:1px solid #6f936c;background:#2c4733;border-radius:10px;color:#eff8e4;font-size:17px}
+.v3-day-nav button:hover{background:#3a5a42}
+.v3-hero-caption{font-size:10px;color:#d0e7a9;letter-spacing:.16em;font-weight:750;margin-top:28px}
+.v3-day-hero h2{font:600 clamp(23px,2.5vw,32px)/1.22 Manrope,sans-serif;letter-spacing:-.045em;margin:8px 0 10px}
+.v3-day-hero p{font-size:12px;color:#b3cbae;margin:0;line-height:1.65}
+.v3-source-card{margin:0 0 15px;border:1px solid #405a46;border-radius:18px;padding:22px;background:#1b3024}
+.v3-astro-card{background:#19281f;border-color:#344839}
+.v3-section-top{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.v3-section-top h4{font:650 22px Manrope,sans-serif;letter-spacing:-.045em;margin:6px 0 0}
+.v3-chip{border:1px solid #6c806b;color:#b4c4b1;padding:7px 10px;border-radius:100px;font-size:10px;white-space:nowrap}
+.v3-chip.connected{border-color:#92ae85;color:#d5ee9b}
+.v3-psych-focus{background:#263e2f;border:1px solid #3c5e44;border-radius:13px;padding:18px;margin-top:19px}
+.v3-psych-focus strong{display:block;font-size:16px;margin:7px 0;color:#eff4e9}
+.v3-psych-focus p{font-size:13px;line-height:1.75;color:#d5e4d0;margin:0 0 11px}
+.v3-avoid-text{color:#dfbc99;font-size:12px;line-height:1.55;margin-top:8px}
+.v3-psych-focus details,.v3-suggestion details{border-top:1px solid #435747;margin-top:13px;padding-top:11px}
+.v3-psych-focus summary,.v3-suggestion summary{color:#cce2b4;font-size:11px;cursor:pointer}
+.v3-psych-focus details p,.v3-suggestion details p{color:#b6c6b3;font-size:11px;line-height:1.6;margin:8px 0 0}
+.v3-checkin{margin-top:22px;border-top:1px solid #395442;padding-top:16px}
+.v3-checkin-heading{display:flex;justify-content:space-between;gap:8px;font-size:14px;font-weight:650}
+.v3-checkin-heading span{font-size:11px;color:#9cb39a;font-weight:400}
+.v3-checkin label{display:grid;grid-template-columns:110px minmax(0,1fr) 42px;align-items:center;gap:10px;font-size:11px;color:#c8d7c5;margin-top:13px}
+.v3-checkin label span{grid-column:3;grid-row:1;text-align:right;font-size:11px;color:#d5ee9b}
+.v3-checkin input{grid-column:2;grid-row:1;width:100%;accent-color:#d5ee9b;cursor:pointer;padding:0}
+.v3-checkin-foot{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:13px}
+.v3-checkin-foot span{font-size:10px;color:#8fa88d}
+.v3-checkin-foot button{background:#d5ee9b;border:0;color:#1e2a1d;border-radius:8px;padding:9px 13px;font-size:11px;font-weight:750}
+.v3-sub{margin-top:20px;margin-bottom:8px}
+.v3-real-task{padding:11px 0;border-bottom:1px solid #38513d}
+.v3-real-task strong{font-size:12px;line-height:1.55;display:block}
+.v3-real-task span{font-size:10px;color:#a1ba9e;line-height:1.55;display:block;margin-top:5px}
+.v3-link-actions{display:flex;gap:13px;flex-wrap:wrap;margin-top:18px}
+.v3-link-actions a,.v3-connect a{font-size:12px;color:#d5ee9b;text-decoration:underline;text-underline-offset:4px}
+.v3-link-actions button{border:0;background:none;color:#a9bca3;text-decoration:underline;cursor:pointer;padding:0;font-size:12px}
+.v3-connect{border:1px dashed #536c54;border-radius:12px;padding:16px;margin-top:18px}
+.v3-connect p{font-size:12px;color:#b8cbb5;line-height:1.75;margin:0 0 13px}
+.v3-small{font-size:11px;line-height:1.7;color:#a0b39f}
+.v3-muted-warning{margin-top:14px;color:#dfb98a;background:#5443322c;border-left:2px solid #caa16c;padding:10px;font-size:11px;line-height:1.5}
+.v3-astro-facts{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 11px}
+.v3-astro-facts span{border:1px solid #435f49;background:#22392b;padding:8px 10px;border-radius:8px;color:#d1dfcc;font-size:11px}
+.v3-astro-compact{display:grid;gap:9px;margin-top:18px}
+.v3-suggestion{border:1px solid #3c5844;border-radius:12px;padding:15px;background:#203428}
+.v3-sug-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.v3-sug-head b{font-size:13px}
+.v3-sug-status{font-size:10px;color:#b3c4ae}
+.v3-sug-status.good{color:#d5ee9b}.v3-sug-status.caution{color:#dfb48a}
+.v3-suggestion>p{font-size:12px;line-height:1.7;color:#d4e1d0;margin:12px 0 8px}
+.v3-secondary-details{margin-top:17px;border-top:1px solid #37513c;padding-top:13px}
+.v3-secondary-details>summary{color:#bbd3b1;cursor:pointer;font-size:12px;font-weight:600}
+.v3-secondary-details p{font-size:11px;line-height:1.65;color:#b7c9b1}
+.v3-secondary-details small{display:block;font-size:10px;color:#91a68f;margin-top:4px}
+.v3-all-cats{display:grid;gap:8px;margin-top:14px}
+.v3-all-cats>div{display:grid;grid-template-columns:1fr auto;gap:5px 14px;padding:9px 0;border-bottom:1px solid #33493a}
+.v3-all-cats b{font-size:12px}
+.v3-all-cats span{font-size:10px;color:#b4c9aa}
+.v3-all-cats small{grid-column:1/-1;color:#8fa58f;line-height:1.55}
+.v3-source-note{border-top:1px solid #334b36;margin:19px 0 0;padding-top:11px;font-size:10px;line-height:1.6;color:#819881}
+.v3-principle{color:#97ac97;padding:13px 7px 22px;font-size:11px;line-height:1.7}
+.v3-error{color:#e3b39c;font-size:13px;padding:20px}
+.v3-reference{margin-top:23px;border-top:1px solid #344c38;padding-top:14px}
+.v3-reference>summary{cursor:pointer;color:#a8bfa4;font-size:12px}
+.v3-reference>.section{margin-top:20px}
+.v3-reference>.card{margin-top:12px}
+@media(max-width:1080px){.v3-workbench{grid-template-columns: minmax(300px,380px) minmax(0,1fr);gap:14px}.v3-calendar{padding:17px!important}.v3-day-hero,.v3-source-card{padding:17px}}
+@media(max-width:890px){.v3-workbench{grid-template-columns:1fr}.v3-left{position:static}.v3-calendar .day{min-height:69px}.v3-right{margin-top:0}.v3-lead{font-size:13px}.v3-source-card{padding:20px}}
+@media(max-width:520px){.v3-calendar .day{min-height:58px;padding:6px 4px}.v3-calendar .day .astro-day-tone{font-size:8px;margin-top:9px}.v3-month-bar h3{font-size:16px!important}.v3-lenses button{font-size:11px;flex:1}.v3-cats{flex-wrap:nowrap;overflow-x:auto;padding-bottom:5px;scrollbar-width:none}.v3-cats button{flex:none}.v3-day-hero h2{font-size:24px}.v3-checkin label{grid-template-columns:88px minmax(0,1fr) 35px}.v3-source-card{padding:17px}.v3-section-top h4{font-size:19px}.v3-month-highlights{padding:16px}}
