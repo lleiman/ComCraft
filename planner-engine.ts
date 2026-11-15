@@ -96,8 +96,40 @@ function dayCategory(cfg,day,moonElement,retro,phaseAngle){
     sources:[...(fits.length||warnings.length?['Китайский альманах Хуанли']:[]),'Астрономические эфемериды / традиционная интерпретация']
   };
 }
-export function buildAstroPlanner(month,tz,rich){
+function personalNatal(profile){
+  if(!profile||!/^\d{4}-\d{2}-\d{2}$/.test(profile.birth||''))return null;
+  if(!/^[0-2]\d:[0-5]\d$/.test(profile.birthtime||'')||!profile.birthZone)return null;
+  try{
+    const [h,m]=profile.birthtime.split(':').map(Number);
+    if(h>23)return null;
+    const at=new Date(localToUtc(profile.birth,h,profile.birthZone).getTime()+m*60000);
+    return {sun:Astro.SunPosition(at).elon,moon:moonLongitude(at),
+      sunSign:SIGNS[signIndex(Astro.SunPosition(at).elon)],
+      moonSign:SIGNS[signIndex(moonLongitude(at))]};
+  }catch{return null;}
+}
+function personalAspects(at,natal){
+  if(!natal)return [];
+  const t=[['Луна',moonLongitude(at),3.5],['Солнце',Astro.SunPosition(at).elon,1.0]];
+  const n=[['натальному Солнцу',natal.sun],['натальной Луне',natal.moon]];
+  const aspects=[{a:0,label:'соединение',meaning:'выделение соответствующей темы'},{a:60,label:'секстиль',meaning:'тема взаимодействия и согласования'},{a:90,label:'квадрат',meaning:'тема напряжения и пересмотра'},{a:120,label:'трин',meaning:'тема согласованности и развития'},{a:180,label:'оппозиция',meaning:'тема противоположностей и баланса'}];
+  const found=[];
+  for(const [planet,lon,orb] of t)for(const [target,nlon] of n){
+    const sep=Math.abs(delta(lon,nlon));
+    for(const aspect of aspects){
+      const diff=Math.abs(sep-aspect.a);
+      if(diff<=orb)found.push({
+        title:planet+' · '+aspect.label+' к '+target,
+        orb:Math.round(diff*10)/10,
+        explanation:'Традиционная интерпретация: '+aspect.meaning+'. Это символическое соответствие, а не доказанный прогноз.'
+      });
+    }
+  }
+  return found.sort((a,b)=>a.orb-b.orb).slice(0,4);
+}
+export function buildAstroPlanner(month,tz,rich,profile={}){
   new Intl.DateTimeFormat('en',{timeZone:tz});
+  const natal=personalNatal(profile);
   const days=rich.days.map(day=>{
     const start=localToUtc(day.date,0,tz),middle=localToUtc(day.date,12,tz);
     const next=new Date(Date.UTC(+day.date.slice(0,4),+day.date.slice(5,7)-1,+day.date.slice(8)+1)).toISOString().slice(0,10);
@@ -121,7 +153,7 @@ export function buildAstroPlanner(month,tz,rich){
     if(retro)events.push({title:'Ретроградное видимое движение Меркурия',kind:'mercury',explanation:'Геоцентрическая долгота Меркурия уменьшается; влияния на результаты решений наукой не установлено.'});
     const top=categories.find(c=>c.level==='good')||categories.find(c=>c.level==='neutral')||categories[0];
     return {
-      date:day.date,overall,
+      date:day.date,overall,personalAspects:personalAspects(middle,natal),
       headline:good.length?'Акцент: '+good.slice(0,2).join(' и '):cautions.length?'Больше осторожности: '+cautions.slice(0,2).join(' и '):'День без выраженного традиционного акцента',
       summary:'Основное направление: '+top.name.toLowerCase()+'. Рекомендации исходят из символических систем и не гарантируют результат.',
       moon:{sign:SIGNS[index],element:moonElement,phase:phaseName,phaseAngle:Math.round(phase),illumination},
@@ -131,5 +163,5 @@ export function buildAstroPlanner(month,tz,rich){
       drivers:[{title:'Луна в '+SIGNS[index],why:SIGN_TRAITS[moonElement],kind:'symbolic'},{title:phaseName+' · освещённость '+illumination+'%',why:'Положение и освещённость Луны рассчитаны астрономически; трактовка фаз традиционная.',kind:'astronomy'}]
     };
   });
-  return {version:1,month,timeZone:tz,days,method:'Astronomy Engine (тропический зодиак), lunar-javascript (Хуанли). Время переходов в часовом поясе профиля.',warning:'Астрологические рекомендации являются культурной интерпретацией. Они не доказаны как способ прогнозировать успех решений; вопросы здоровья, финансов и безопасности решаются по фактическим данным.'};
+  return {version:2,month,timeZone:tz,natal:natal?{sunSign:natal.sunSign,moonSign:natal.moonSign}:null,days,method:'Astronomy Engine (тропический зодиак), lunar-javascript (Хуанли). Время переходов в часовом поясе профиля.',warning:'Астрологические рекомендации являются культурной интерпретацией. Они не доказаны как способ прогнозировать успех решений; вопросы здоровья, финансов и безопасности решаются по фактическим данным.'};
 }
