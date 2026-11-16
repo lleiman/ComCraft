@@ -845,7 +845,7 @@ function forecastCheckins(end){
 
 /* Day-first reading: full information for the selected date instead of placeholder "focus". */
 const dayReadingExtraCache=new Map(),dayReadingExtraInFlight=new Set();
-let dayReadingNatal=null,dayReadingNatalStarted=false;
+let dayReadingNatal=null,dayReadingNatalStarted=false,dayReadingNatalKey='';
 const dayLifeTopics={
  work:{headline:'Работа, запуск и договорённости',why:'Взвесьте реальный срок, ресурсы и следующий шаг. Китайские даты используются лишь как традиционный контекст.'},
  money:{headline:'Финансы и обязательства',why:'Фактический риск определяется условиями платежа и договора. Календарный символ не заменяет проверку реквизитов.'},
@@ -868,6 +868,8 @@ function dayReadingExtras(date){
  return null;
 }
 function dayReadingNatalLoad(state){
+ const k=[state.birth,state.birthtime,state.birthZone].join('|');
+ if(k!==dayReadingNatalKey){dayReadingNatalStarted=false;dayReadingNatal=null;dayReadingNatalKey=k;}
  if(dayReadingNatalStarted||!state.birth||!state.birthtime||!state.birthZone)return;
  dayReadingNatalStarted=true;
  Promise.resolve().then(()=>app.personalTeachings?.()).then(x=>{dayReadingNatal=x||null;})
@@ -887,7 +889,8 @@ function dayReadingTeaching(t,day,extra,natal){
  let e;
  try{e=explainTeaching(t,day,extra||{},natal||null)}catch{return ''}
  if(!e)return '';
- const available=!(e.headline||'').match(/пока не рассчитан|пока не рассчитана|Рассчитываем|Загружаем/i);
+ const available=!(e.headline||'').match(/пока не рассчитан|пока не рассчитана|Рассчитываем|Загружаем|недоступен/i);
+ if(!available)return '';
  const details='Источник: '+teachingOrigin(t.id);
  const cardTitle=t.id==='tibetan'?'Тибетский календарь · школа Пхугпа':t.name;
  return '<article class="v7-system"><div class="v7-system-title"><h4>'+esc(cardTitle)+'</h4><span>'+esc(e.scope)+'</span></div>'+
