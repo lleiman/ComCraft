@@ -1220,16 +1220,19 @@ function installPublicQA(){
    add('russian_huangli_visible',!!document.querySelector('#v5-forecast .v7-almanac'));
    add('no_raw_chinese_in_first_huangli',!/[㐀-鿿]/.test(document.querySelector('#v5-forecast .v7-almanac')?.textContent||''));
    add('time_zone_control',!!document.querySelector('#v5-forecast [data-v9-zone]'));
+   for(let i=0;i<24&&!Array.from(document.querySelectorAll('#v5-forecast .v7-system')).some(x=>/тибетский календарь/i.test(x.textContent));i++)await new Promise(r=>setTimeout(r,220));
    add('tibetan_phenomena',Array.from(document.querySelectorAll('#v5-forecast .v7-system')).some(x=>/тибетский календарь/i.test(x.textContent)));
    add('unknown_personal_scores_not_fabricated',!(/Оценка языковой модели: 50%/.test(document.querySelector('#v5-forecast .v7-personal')?.textContent||'')));
    const nxt=document.querySelector('#v5-forecast [data-v7-shift="1"]');
    if(nxt)nxt.click();
    add('next_date_changes_selected',app.state().selected===forecastShift(initial,1));
    app.selectDate(initial);
+   for(let i=0;i<20&&!document.querySelector('#v5-forecast .v7-story');i++)await new Promise(r=>setTimeout(r,160));
    for(const h of ['week','month','day']){
-    const b=document.querySelector('#v5-forecast [data-v5-horizon="'+h+'"]');
-    if(b)b.click();
-    add('horizon_'+h,forecastHorizon===h);
+    const control=document.querySelector('#v5-forecast [data-v5-horizon="'+h+'"]');
+    if(control)control.click();
+    await new Promise(r=>setTimeout(r,170));
+    add('horizon_'+h,forecastHorizon===h,'button='+!!control+' active='+forecastHorizon+' heading='+(document.querySelector('#v5-forecast h2')?.textContent||''));
    }
    try{
     const r=await fetch('/api/self-test',{cache:'no-store'}),v=await r.json();
