@@ -161,7 +161,7 @@ export function buildAstroPlanner(month,tz,rich,profile={}){
       summary:'Основное направление: '+top.name.toLowerCase()+'. Рекомендации исходят из символических систем и не гарантируют результат.',
       moon:{sign:SIGNS[index],element:moonElement,phase:phaseName,phaseAngle:Math.round(phase),illumination},
       sun:{sign:SIGNS[signIndex(Astro.SunPosition(middle).elon)]},
-      mercury:{retrograde:retro},traditional:{yi:(day.almanac?.yiRu||[]).slice(0,7),ji:(day.almanac?.jiRu||[]).slice(0,7)},
+      mercury:{retrograde:retro},traditional:{yi:(day.almanac?.yiRu||[]).slice(0,36),ji:(day.almanac?.jiRu||[]).slice(0,36)},
       events,categories,
       drivers:[{title:'Луна в '+SIGNS[index],why:SIGN_TRAITS[moonElement],kind:'symbolic'},{title:phaseName+' · освещённость '+illumination+'%',why:'Положение и освещённость Луны рассчитаны астрономически; трактовка фаз традиционная.',kind:'astronomy'}]
     };
