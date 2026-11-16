@@ -437,3 +437,13 @@
 .v8-privacy p{font-size:11px;line-height:1.6;margin:7px 0 10px;color:#bbd0b4}
 .v8-privacy button{border:1px solid #9bb48e;background:#2f4934;color:#e5f0de;border-radius:10px;padding:9px 12px;font-size:11px;font-weight:700;cursor:pointer}
 .v8-privacy button:hover{background:#3a5940}
+
+
+/* v9: verified actual calendar indications, narrative significance, and explicit timezone */
+.v9-timezone{display:flex;align-items:center;gap:10px;justify-content:flex-end;font-size:11px;color:#c7dbc2;margin:-3px 0 12px;flex-wrap:wrap}
+.v9-timezone select{max-width:290px;min-width:170px;background:#203b29;color:#eaf3e3;border:1px solid #638365;border-radius:9px;padding:8px 12px;font-size:12px}
+.v9-meanings{display:grid;grid-template-columns:1fr;gap:10px;margin:17px 0}
+.v9-meanings p{margin:0!important;border:1px solid #567354;border-radius:11px;padding:12px 14px;background:#253e2c;color:#e0eadd;line-height:1.65}
+.v9-meanings b{color:#e0f4bd}
+.v9-focus{padding:12px 14px;border-left:3px solid #aac590;color:#d3e1cc!important;background:#284331}
+@media(max-width:700px){.v9-timezone{justify-content:space-between}.v9-timezone select{width:100%;max-width:none;flex:1}}
