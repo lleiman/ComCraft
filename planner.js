@@ -289,8 +289,8 @@ let psychology=null,checkins={};
 try{
  active=localStorage.getItem('iytn_planner_category')||'all';
  lens=localStorage.getItem(LENS_KEY)||'all';
- forecastHorizon=localStorage.getItem(FORECAST_KEY)||'day';
- if(!['day','week','month'].includes(forecastHorizon))forecastHorizon='day';
+ // On a fresh visit, always begin with today's full reading.
+ forecastHorizon='day';
  psychology=JSON.parse(localStorage.getItem(PSY_KEY)||'null');
  checkins=JSON.parse(localStorage.getItem(CHECKIN_KEY)||'{}');
  if(!tabs.some(t=>t[0]===active))active='all';
@@ -434,31 +434,25 @@ function psychAdvice(day){
 }
 function psychPanel(day,state){
  const connected=!!psychology;
- const due=psychEvents(day.date),goals=psychGoals(),checkin=currentCheckin(day.date);
- const mayEdit=day.date<=todayIso();
- const summary=psychAdvice(day);
- const stale=psychology?.exportedAt&&Date.now()-psychology.exportedAt>7*86400000;
- let out='<div class="v3-section-top"><div><div class="v3-kicker">01 · НАБЛЮДЕНИЕ / ПСИХОЛОГИЯ</div><h4>Карта сознания · психологический слой</h4></div><span class="v3-chip '+(connected?'connected':'')+'">'+(connected?(psychology.source==='conscious-map'?'Основная карта':'Исследовательская V2'):'Локальная сверка')+'</span></div>';
- out+='<div class="v3-psych-focus"><div class="v3-kicker">Практический шаг</div><strong>'+esc(summary.title)+'</strong><p>'+esc(summary.action)+'</p><div class="v3-avoid-text">Следует избегать: '+esc(summary.avoid)+'</div><details><summary>Основание рекомендации</summary><p>'+esc(summary.why)+'</p></details></div>';
- if(mayEdit){
- const vals=checkin||{energy:3,stress:3,focus:3};
- out+='<div class="v3-checkin"><div class="v3-checkin-heading">Сверка состояния <span>'+(checkin?'Сохранено':'Не заполнено')+'</span></div>'+
- [['energy','Энергия'],['stress','Стресс'],['focus','Концентрация']].map(x=>'<label>'+x[1]+' <span id="v3-val-'+x[0]+'">'+vals[x[0]]+'/5</span><input data-v3-check="'+x[0]+'" type="range" min="1" max="5" value="'+vals[x[0]]+'"></label>').join('')+
- '<div class="v3-checkin-foot"><span>Самооценка, не диагностический тест</span><button type="button" data-v3-save-checkin>Сохранить</button></div></div>';
- }else out+='<p class="v3-small">На будущую дату состояние не прогнозируется. Сверка станет доступна в этот день.</p>';
- if(connected){
- const spheres=[['self','Я'],['shadow','Тень'],['relations','Отношения'],['body','Тело'],['meaning','Смыслы'],['lineage','Род'],['work','Работа']];
- const counts=psychology.stats?.sphereCounts||{},max=Math.max(1,...spheres.map(x=>counts[x[0]]||0));
- out+='<div class="v3-kicker v3-sub">Покрытие карты · число наблюдений</div><div class="v3-sphere-grid">'+spheres.map(x=>'<div class="v3-sphere"><div><span>'+x[1]+'</span><b>'+(counts[x[0]]||0)+'</b></div><i><em style="width:'+Math.round(100*(counts[x[0]]||0)/max)+'%"></em></i></div>').join('')+'</div>';
- out+='<p class="v3-small">Заполненность сферы отражает объём внесённых данных, а не её состояние, силу или здоровье.</p>';
- if(stale)out+='<div class="v3-muted-warning">Данные Карты старше недели. Для актуализации повторите передачу.</div>';
- if(due.length)out+='<div class="v3-kicker v3-sub">Проверки на эту дату</div>'+due.map(e=>'<div class="v3-real-task"><span>Срок '+esc(e.due)+'</span><strong>'+esc(e.action)+'</strong></div>').join('');
- if(goals.length)out+='<div class="v3-kicker v3-sub">Активные намерения</div>'+goals.slice(0,3).map(g=>'<div class="v3-real-task"><strong>'+esc(g.title)+'</strong><span>'+(psychology.source==='conscious-map'?'Активная цель из основной Карты сознания':'Индекс готовности '+esc(g.readiness)+'/100 · '+esc(g.supportCount)+' опор · '+esc(g.riskCount)+' рисков. Не вероятность.')+'</span></div>').join('');
- if(psychology.hypotheses?.length)out+='<details class="v3-secondary-details"><summary>Проверяемые гипотезы ('+psychology.hypotheses.length+')</summary>'+psychology.hypotheses.map(h=>'<p>'+esc(h.title)+'</p>').join('')+'</details>';
- out+='<div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'" target="_blank" rel="noopener noreferrer">Открыть оригинальную карту ↗</a><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Обновить из исследовательской V2 ↗</a><button type="button" data-v3-disconnect>Отключить</button></div>';
- }else{
- out+='<div class="v3-connect"><p>В «Карте сознания» откройте «Исследование» и нажмите «Передать контрольные даты». Сюда попадут активные цели, назначенные проверки и сводные числа.</p><div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'" target="_blank" rel="noopener noreferrer">Открыть оригинальную карту ↗</a><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Связать исследовательскую V2 ↗</a></div></div>';
+ const due=psychEvents(day.date),goals=archiveGoals();
+ const checkin=currentCheckin(day.date);
+ let out='<div class="v3-section-top"><div><div class="v3-kicker">ЛИЧНЫЙ КОНТЕКСТ · ИЗ ВАШИХ ДАННЫХ</div><h4>Цели и реальные наблюдения</h4></div></div>';
+ if(!connected)return out+'<p>Карта сознания ещё не передана в этот браузер. Здесь не будет искусственных психологических прогнозов или оценок.</p><a href="'+ORIGINAL_MAP_ORIGIN+'/?research=1" target="_blank" rel="noopener noreferrer">Передать цели и гипотезы из Карты ↗</a>';
+ if(goals.length)out+='<div class="v7-psych-tasks">'+goals.slice(0,3).map(g=>{
+  const p=typeof g.probability==='number'&&Number.isFinite(g.probability)?Math.round(g.probability*100):null;
+  return '<div><strong>'+esc(g.title)+'</strong>'+(g.steps?.length?'<p><b>Следующий шаг:</b> '+esc(g.steps[0])+'</p>':'')+
+   (g.risks?.length?'<p><b>Ограничение:</b> '+esc(g.risks[0])+'</p>':'')+
+   (p!==null?'<small>Субъективная оценка языковой модели: '+p+'%. Не калиброванная вероятность.</small>':'')+'</div>';
+ }).join('')+'</div>';
+ if(due.length)out+='<div class="v7-psych-tasks">'+due.map(x=>'<div><b>Проверка на '+esc(x.due)+'</b><p>'+esc(x.action)+'</p></div>').join('')+'</div>';
+ if(!goals.length&&!due.length)out+='<p class="v3-small">Для выбранного дня из Карты пока не переданы конкретные цели или проверки. Число записей по сферам не используется для оценки дня.</p>';
+ if(day.date<=todayIso()){
+  const vals=checkin||{energy:3,stress:3,focus:3};
+  out+='<details class="v7-checkin"><summary>Дополнительно: короткий самоотчёт о состоянии</summary><p>Нужен только для подстройки нагрузки сегодня. Это не медицинский тест и не прогноз.</p>'+
+   [['energy','Энергия'],['stress','Стресс'],['focus','Фокус']].map(x=>'<label>'+x[1]+' <span id="v3-val-'+x[0]+'">'+vals[x[0]]+'/5</span><input data-v3-check="'+x[0]+'" type="range" min="1" max="5" value="'+vals[x[0]]+'"></label>').join('')+
+   '<button type="button" data-v3-save-checkin>Сохранить самонаблюдение</button></details>';
  }
+ out+='<div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'/?research=1" target="_blank" rel="noopener noreferrer">Обновить данные из Карты ↗</a><button type="button" data-v3-disconnect>Отключить</button></div>';
  return out;
 }
 function astroPanel(day,model,state){
@@ -688,24 +682,9 @@ function dayPanel(day,model,state){
 }
 function paintMapConnection(){
  const box=document.getElementById('v3-map-connection');if(!box)return;
- const origin=psychology?.source==='conscious-map-v2'?MAP_ORIGIN:ORIGINAL_MAP_ORIGIN;
- const link='<div class="v3-link-actions"><a href="'+origin+'" target="_blank" rel="noopener noreferrer">Открыть Карту сознания ↗</a></div>';
- let out='<div class="v3-section-top"><h3>Карта сознания</h3><span class="v3-chip '+(psychology?'connected':'')+'">'+(psychology?(psychology.archive?'Вся Карта получена':'Сводка получена'):'Связь не настроена')+'</span></div>';
- if(mapTransferError)out+='<p class="v3-muted-warning" role="status">'+esc(mapTransferError)+'</p>';
- if(!psychology){
-  box.innerHTML=out+'<p class="v3-small">В Карте откройте «Исследование» и нажмите «Передать контрольные даты». Сводка появится в этом браузере.</p>'+link;
-  return;
- }
- const goals=psychGoals(),checks=psychology.experiments.filter(e=>e.due).sort((a,b)=>a.due.localeCompare(b.due));
- const at=new Date(psychology.exportedAt);
- out+='<p class="v3-small">'+(psychology.source==='conscious-map'?'Основная Карта':'Исследовательская V2')+' · обновлено '+esc(Number.isFinite(at.getTime())?at.toLocaleString('ru-RU'):'—')+'</p>';
- out+='<p class="v3-small">Цели: '+goals.length+' · Проверки с датой: '+checks.length+' · Наблюдения в сводке: '+(psychology.stats?.evidenceCount||0)+'</p>';
- if(goals.length)out+=goals.map(g=>'<div class="v3-real-task"><span>Цель</span><strong>'+esc(g.title)+'</strong></div>').join('');
- if(checks.length)out+='<div class="v3-month-tasks">'+checks.map(e=>'<button type="button" data-v3-map-date="'+esc(e.due)+'"><time datetime="'+esc(e.due)+'">'+esc(e.due)+'</time><span>'+esc(e.action)+'</span></button>').join('')+'</div>';
- else out+='<p class="v3-small">В переданной сводке нет проверок с назначенной датой. Создайте проверку в «Исследовании» и передайте сводку повторно, чтобы она появилась в календаре.</p>';
- if(psychology.archive)out+='<p class="v3-small">Полная копия: '+Object.keys(psychology.archive).length+' разделов. Все тексты и разметка — под выбранной датой.</p>';
- box.innerHTML=out+link;
- box.querySelectorAll('[data-v3-map-date]').forEach(b=>b.onclick=()=>app.selectDate(b.dataset.v3MapDate));
+ const count=archiveGoals().length;
+ const detail=psychology?(count?'Есть '+count+' активных целей. ':'')+'Сохранено в этом браузере.':'Пока нет личных целей в планнере.';
+ box.innerHTML='<div class="v7-map-mini"><b>Личная Карта</b><span>'+esc(detail)+'</span><a href="'+ORIGINAL_MAP_ORIGIN+'/?research=1" target="_blank" rel="noopener noreferrer">'+(psychology?'Обновить ↗':'Подключить ↗')+'</a></div>'+(mapTransferError?'<p class="v3-muted-warning">'+esc(mapTransferError)+'</p>':'');
 }
 function highlightMonth(model,state){
  const box=document.getElementById('astro-month');if(!box)return;
