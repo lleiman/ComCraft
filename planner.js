@@ -796,72 +796,112 @@ function forecastCheckins(end){
 function paintForecast(state){
  const root=document.getElementById('v5-forecast');if(!root)return;
  const dates=forecastRange(state.selected,forecastHorizon),start=dates[0],end=dates[dates.length-1];
- for(const ym of new Set(dates.map(x=>x.slice(0,7))))requireForecastModel(ym,state);
- const days=dates.map(date=>{
- const model=cache[forecastCacheKey(date.slice(0,7),state)];
- return {date,item:model?.days?.find(x=>x.date===date)};
- });
- const ready=days.filter(x=>x.item),good=ready.filter(x=>x.item.overall==='good').length,caution=ready.filter(x=>x.item.overall==='caution').length;
- const goals=archiveGoals(),context=psychology?.archive;
- const taskDates=(state.goals||[]).filter(x=>x.date>=start&&x.date<=end).map(x=>({date:x.date,text:x.name,kind:'Цель'}));
- const experimental=(psychology?.experiments||[]).filter(x=>x.due>=start&&x.due<=end).map(x=>({date:x.due,text:x.action,kind:'Проверка'}));
- const tasks=[...taskDates,...experimental].sort((a,b)=>a.date.localeCompare(b.date));
- const firstAction=tasks[0]?.text||goals.find(g=>g.steps.length)?.steps?.[0]||'Выбрать один проверяемый шаг по главной цели';
- const dominant=[];
- for(const item of ready.flatMap(x=>x.item.categories||[])){
-   let category=dominant.find(v=>v.id===item.id);
-   if(!category){category={id:item.id,name:item.name,good:0,caution:0};dominant.push(category)}
-   if(item.level==='good')category.good++;
-   if(item.level==='caution')category.caution++;
- }
- dominant.sort((a,b)=>b.good-a.good||a.caution-b.caution);
- const best=dominant.filter(x=>x.good>0).slice(0,2);
- const isDay=forecastHorizon==='day',isWeek=forecastHorizon==='week';
- const title=isDay?'План на выбранный день':isWeek?'Прогноз на неделю':'Прогноз на месяц';
- const description=isDay?'Практические шаги и контекст на этот день.':isWeek?'Неделя: контрольные точки, нагрузка и традиционный календарный фон.':'Месяц: цели, сроки, гипотезы и лучшие дни по традиционным правилам.';
- let html='<div class="v5-top"><div><div class="v5-kicker">ПЕРСОНАЛЬНЫЙ ОБЗОР · '+esc(forecastTimeLabel(start,end))+'</div><h2>'+title+'</h2><p>'+description+'</p></div><div class="v5-horizons" role="group" aria-label="Горизонт прогноза">';
- for(const [id,label] of [['day','День'],['week','Неделя'],['month','Месяц']])html+='<button type="button" data-v5-horizon="'+id+'" aria-pressed="'+String(forecastHorizon===id)+'">'+label+'</button>';
- html+='</div></div>';
- html+='<div class="v5-summary"><section class="v5-summary-main"><div class="v5-kicker">ОСНОВНОЙ ПРИОРИТЕТ</div><h3>'+esc(firstAction)+'</h3><p>'+(tasks.length?'В периоде '+tasks.length+' контрольных точек из целей и экспериментов.':'Это предложение по организации дел, а не предсказание события.')+'</p></section>';
- html+='<section class="v5-summary-side"><div class="v5-kicker">КАЛЕНДАРНЫЙ ФОН · СИМВОЛИЧЕСКИЙ</div><strong>'+good+' / '+ready.length+'</strong><p>Дней с преобладанием традиционно подходящих категорий. Осторожнее: '+caution+'. Это не вероятность успеха.</p></section></div>';
- if(!psychology){
- html+='<div class="v5-connect-alert"><div><b>Психологическая Карта ещё не подключена</b><p>В Карте есть оценки исполнения целей, факторы, прогнозные гипотезы и эксперименты. Сейчас эти данные недоступны планнеру: приложения хранят их на разных доменах.</p></div><a href="'+ORIGINAL_MAP_ORIGIN+'/?research=1" target="_blank" rel="noopener noreferrer">Открыть Карту и передать сводку ↗</a></div>';
+ const months=[...new Set(dates.map(d=>d.slice(0,7)))];
+ for(const ym of months)requireForecastModel(ym,state);
+ const days=dates.map(date=>({date,item:cache[forecastCacheKey(date.slice(0,7),state)]?.days?.find(d=>d.date===date)}));
+ const ready=days.filter(d=>d.item);
+ const goals=archiveGoals();
+ const ownTasks=(state.goals||[]).filter(x=>x.date>=start&&x.date<=end).map(x=>({date:x.date,text:x.name,kind:'Цель из планнера'}));
+ const checks=(psychology?.experiments||[]).filter(x=>x.due>=start&&x.due<=end).map(x=>({date:x.due,text:x.action,kind:'Проверка из Карты'}));
+ const tasks=[...ownTasks,...checks].sort((a,b)=>a.date.localeCompare(b.date));
+ const today=currentCheckin(state.selected),isCurrent=state.selected===todayIso();
+ const goalWithPlan=goals.find(x=>x.steps?.length);
+ let recommendation,reason,action,sourceLabel,guard;
+ if(forecastHorizon==='day'&&isCurrent&&today&&(today.stress>=4||today.energy<=2)){
+  recommendation='Сократить план до одной обязательной задачи';
+  action=tasks[0]?.text||goalWithPlan?.steps[0]||'Выберите самое важное дело и выделите короткий рабочий блок.';
+  reason='В сегодняшнем самоотчёте '+(today.stress>=4?'стресс '+today.stress+'/5':'энергия '+today.energy+'/5')+'. Это ваш собственный показатель, а не предсказание.';
+  sourceLabel='Самоотчёт + правила нагрузки';guard='Перед новым обязательством проверьте доступное время и ресурс.';
+ }else if(tasks.length){
+  recommendation=forecastHorizon==='day'?'Сосредоточиться на ближайшем сроке':'Начать с первой контрольной точки периода';
+  action=tasks[0].text;
+  reason=tasks[0].kind+': '+tasks[0].date+'. В периоде всего '+tasks.length+' запланированных дел и проверок.';
+  sourceLabel='Ваши сроки и проверки';guard='Сначала оцените объём задачи и время на её выполнение.';
+ }else if(goalWithPlan){
+  recommendation='Продвинуть активную цель одним конкретным действием';
+  action=goalWithPlan.steps[0];
+  reason='Шаг указан в разборе цели «'+goalWithPlan.title+'» в вашей Карте сознания.';
+  sourceLabel='Разбор цели из Карты';guard='Оценка исполнения цели отражает мнение языковой модели, а не статистический прогноз.';
+ }else if(goals.length){
+  recommendation='Превратить цель в выполнимый следующий шаг';
+  action='Для цели «'+goals[0].title+'» запишите действие, которое можно проверить в течение '+(forecastHorizon==='day'?'дня':forecastHorizon==='week'?'недели':'месяца')+'.';
+  reason='Цель есть в Карте, но конкретные шаги не переданы.';
+  sourceLabel='Ваша цель + правило планирования';guard='Уточните критерий завершения и назначьте контрольную дату.';
  }else{
- const stale=Date.now()-Number(psychology.exportedAt||0)>7*86400000;
- html+='<div class="v5-psych-context"><div class="v5-context-head"><b>Психологический прогноз · ваша Карта</b><span>'+(context?'Полная Карта':'Сводка')+(stale?' · данные устарели':'')+'</span></div>';
- if(goals.length){
- html+='<div class="v5-goal-grid">'+goals.slice(0,4).map(g=>{
- const valid=typeof g.probability==='number'&&Number.isFinite(g.probability)&&g.probability>=0&&g.probability<=1;
- const percent=valid?Math.round(g.probability*100):null;
- let x='<article class="v5-goal"><div class="v5-goal-header"><b>'+esc(g.title)+'</b><span>'+(valid?percent+'%':'Нет оценки')+'</span></div>';
- if(valid)x+='<div class="v5-meter"><i style="width:'+percent+'%"></i></div><p class="v5-foot">Внутренняя оценка достижения цели из модели Карты. Не статистически проверенная вероятность.</p>';
- if(g.steps.length)x+='<p><b>Следующий шаг:</b> '+esc(g.steps[0])+'</p>';
- if(g.supports.length)x+='<p><b>Опора:</b> '+esc(g.supports[0])+'</p>';
- if(g.risks.length)x+='<p><b>Риск:</b> '+esc(g.risks[0])+'</p>';
- if(g.history.length>=2){
- const last=g.history[g.history.length-1],prev=g.history[g.history.length-2];
- if(Number.isFinite(last.probability)&&Number.isFinite(prev.probability)){
- const delta=Math.round((last.probability-prev.probability)*100);
- x+='<p class="v5-foot">Динамика последней переоценки: '+(delta>0?'+':'')+delta+' п.п.</p>';
- }}
- return x+'</article>';
- }).join('')+'</div>';
- }else html+='<p class="v5-faded">Активных целей в переданной Карте нет.</p>';
- html+=forecastEvidence(start,end);
- if(!context)html+='<p class="v5-foot">Показаны переданные прогнозные формулировки и оценки целей. Исходные дневники, тесты и документы сюда не копируются. Полный архив можно отдельно передать из Карты, но он будет храниться в браузере планнера без шифрования.</p>';
- html+=forecastCheckins(end)+'</div>';
+  recommendation='Определить реальный приоритет на выбранный период';
+  action='Выберите одно дело, запишите наблюдаемый результат и назначьте срок.';
+  reason='Планнер пока не видит целей или контрольных точек для этого периода.';
+  sourceLabel='Базовое правило планирования';guard='Пока нет личных данных, совет общий. Прогнозировать поведение невозможно.';
  }
- html+='<div class="v5-columns"><section><div class="v5-kicker">КОНКРЕТНЫЕ ДЕЛА И СРОКИ</div>';
- html+=tasks.length?tasks.slice(0,10).map(x=>forecastRow(x.kind+' · '+x.date,x.text,'')).join(''):'<p class="v5-faded">На период не назначены сроки. Добавьте их в целях или проверках Карты.</p>';
- html+='</section><section><div class="v5-kicker">ТРАДИЦИОННЫЕ КАЛЕНДАРНЫЕ СИГНАЛЫ</div>';
- if(best.length)html+='<p class="v5-forecast-copy">По символическим расчётам чаще выделяются: '+esc(best.map(x=>x.name+' ('+x.good+' дн.)').join(', '))+'. Сопоставьте с реальными обязательствами.</p>';
- else html+='<p class="v5-faded">Явного календарного акцента по выбранному периоду нет.</p>';
- if(!ready.length||ready.length<dates.length)html+='<p class="v5-foot">Расчёты загружены для '+ready.length+' из '+dates.length+' дней. Данные ещё догружаются или недоступны.</p>';
- html+=forecastTimeline(days,forecastHorizon)+'</section></div>';
- html+='<div class="v5-foot v5-method">Метод: сроки, цели, самоотчёты и гипотезы берутся из ваших данных; традиционные обозначения — из календарных методов. Фактическая вероятность события не выводится из астрологии, Хуанли или чисел. Для психологической оценки необходимы актуальные наблюдения.</div>';
- root.innerHTML=html;
+ const horizonTitle=forecastHorizon==='day'?'День':forecastHorizon==='week'?'Неделя':'Месяц';
+ const meta=psychology?.source==='conscious-map'?'Основная Карта':psychology?'Исследовательская V2':'Нет подключения';
+ let out='<div class="v6-head"><div><div class="v6-eyebrow">ПЛАН ДЕЙСТВИЙ · '+esc(forecastTimeLabel(start,end))+'</div><h2>'+horizonTitle+' · что делать</h2><p>Совет из ваших задач и наблюдений. Традиционные расчёты приведены отдельно.</p></div><div class="v5-horizons" role="group" aria-label="Период">';
+ for(const [key,label] of [['day','День'],['week','Неделя'],['month','Месяц']])out+='<button type="button" data-v5-horizon="'+key+'" aria-pressed="'+String(forecastHorizon===key)+'">'+label+'</button>';
+ out+='</div></div>';
+ out+='<section class="v6-main"><div class="v6-eyebrow">'+esc(sourceLabel)+'</div><h3>'+esc(recommendation)+'</h3><div class="v6-action"><span>Что сделать</span><strong>'+esc(action)+'</strong></div><p class="v6-reason"><b>Почему:</b> '+esc(reason)+'</p><p class="v6-warning">'+esc(guard)+'</p></section>';
+ out+='<div class="v6-section"><div class="v6-section-heading"><h3>01 · Ваши задачи и сроки</h3><span>'+tasks.length+' на период</span></div>';
+ if(tasks.length)out+='<div class="v6-tasks">'+tasks.slice(0,4).map((t,i)=>'<button type="button" class="v6-task" data-v6-date="'+esc(t.date)+'"><small>'+esc(t.date)+' · '+esc(t.kind)+'</small><b>'+esc(t.text)+'</b><span>К дате ↗</span></button>').join('')+'</div>';
+ else out+='<p class="v6-empty">Дел с установленным сроком не обнаружено. Добавьте дату в цели или назначьте эксперимент в Карте.</p>';
+ if(tasks.length>4)out+='<details class="v6-expander"><summary>Ещё '+(tasks.length-4)+' дела</summary>'+tasks.slice(4,18).map(t=>forecastRow(t.kind+' · '+t.date,t.text,'')).join('')+'</details>';
+ out+='</div>';
+ out+='<div class="v6-section"><div class="v6-section-heading"><h3>02 · Что говорит Карта сознания</h3><span>'+esc(meta)+'</span></div>';
+ if(!psychology){
+  out+='<div class="v6-connect"><p>Психологические расчёты пока не переданы. Это не отсутствие прогнозов в Карте: приложения хранят личные данные отдельно.</p><a href="'+ORIGINAL_MAP_ORIGIN+'/?research=1" target="_blank" rel="noopener noreferrer">Подключить цели и прогнозы ↗</a></div>';
+ }else{
+  if(goals.length){
+   out+='<div class="v6-goals">'+goals.slice(0,3).map(g=>{
+    const valid=typeof g.probability==='number'&&Number.isFinite(g.probability)&&g.probability>=0&&g.probability<=1;
+    const p=valid?Math.round(g.probability*100):null;
+    const model=g.modelInfo?.model?g.modelInfo.model:'модель не записана в старом разборе';
+    return '<article class="v6-goal"><div class="v6-goal-top"><b>'+esc(g.title)+'</b><span>'+(p===null?'Без оценки':p+'%')+'</span></div>'+
+     (valid?'<p class="v6-model-label">Оценка LLM, не проверенная вероятность. Модель: '+esc(model)+'</p><div class="v5-meter"><i style="width:'+p+'%"></i></div>':'<p class="v6-model-label">Нет модельной оценки. Ничего не подставлено вместо неё.</p>')+
+     (g.steps?.length?'<p><b>Шаг:</b> '+esc(g.steps[0])+'</p>':'')+
+     (g.supports?.length?'<p><b>Помогает:</b> '+esc(g.supports[0])+'</p>':'')+
+     (g.risks?.length?'<p><b>Мешает:</b> '+esc(g.risks[0])+'</p>':'')+
+    '</article>';
+   }).join('')+'</div>';
+  }else out+='<p class="v6-empty">Активные цели не переданы. Оценки здесь появятся только после расчёта цели в Карте.</p>';
+  const annual=(psychology?.predictions||[]).filter(x=>Number(x.year)===Number(end.slice(0,4)));
+  const research=(psychology?.researchForecasts||[]).filter(x=>!x.expectedBy||(x.expectedBy>=start&&x.expectedBy<=end));
+  if(annual.length||research.length)out+='<details class="v6-expander"><summary>Гипотезы и сценарии · '+(annual.length+research.length)+'</summary>'+
+   annual.slice(0,5).map(h=>'<div class="v6-hyp"><span>Годовая гипотеза · основание '+esc(h.confidenceLevel||1)+'/3</span><p>'+esc(h.claim)+'</p></div>').join('')+
+   research.slice(0,5).map(h=>'<div class="v6-hyp"><span>Проверяемое предположение'+(h.expectedBy?' · срок '+esc(h.expectedBy):'')+'</span><p>'+esc(h.claim)+'</p></div>').join('')+'</details>';
+  const stale=Date.now()-Number(psychology.exportedAt||0)>7*86400000;
+  if(stale)out+='<p class="v6-small">Данные старше недели. Обновите передачу из Карты для текущих целей.</p>';
+ }
+ out+='</div>';
+ const relevant=ready.flatMap(x=>(x.item?.categories||[]).map(c=>({date:x.date,...c})));
+ const counts={};
+ for(const c of relevant){
+  if(!counts[c.id])counts[c.id]={name:c.name,good:0,caution:0};
+  if(c.level==='good')counts[c.id].good++;
+  if(c.level==='caution')counts[c.id].caution++;
+ }
+ const sorted=Object.values(counts).sort((a,b)=>b.good-a.good||a.caution-b.caution);
+ const positives=sorted.filter(c=>c.good>0).slice(0,2);
+ out+='<details class="v6-trad"><summary><span>03 · Традиционный календарный контекст</span><small>Хуанли · Луна · астрологические правила</small></summary>';
+ out+='<p>Это символический слой. Астрономические координаты рассчитываются, но соответствие дат успешным действиям научно не установлено.</p>';
+ if(ready.length!==dates.length)out+='<p class="v6-small">Рассчитано '+ready.length+' из '+dates.length+' дней: часть периода ещё загружается.</p>';
+ if(positives.length)out+='<p><b>Символически выделены темы:</b> '+esc(positives.map(x=>x.name+' ('+x.good+' дн.)').join(', '))+'. Это количество совпадений правил, не шанс успеха.</p>';
+ else out+='<p>Явного преобладающего акцента нет. Реальные задачи лучше выбирать по срокам.</p>';
+ if(forecastHorizon==='day'&&ready[0]){
+  const categories=active==='all'?ready[0].item.categories.slice(0,3):ready[0].item.categories.filter(c=>c.id===active);
+  out+=categories.map(c=>'<div class="v6-trad-item"><b>'+esc(c.name)+'</b><p>'+esc(c.do)+'</p><small>Основание: '+esc(c.why)+'</small></div>').join('');
+ }else out+=forecastTimeline(days,forecastHorizon);
+ out+='</details>';
+ out+='<details class="v6-source"><summary>Как это рассчитано · модели, данные и ограничения</summary>'+
+ '<div class="v6-source-row"><b>Главный совет</b><span>Авторские правила в планнере, без нейросети. Порядок: сегодняшняя нагрузка → назначенный срок → шаг цели → общий совет. Источники: ваши записи и задачи.</span></div>'+
+ '<div class="v6-source-row"><b>Оценки целей</b><span>Языковая модель, выбранная в «Карте сознания» при разборе цели. Это её субъективная оценка, не статистическая вероятность и не прогноз на конкретную дату. Для новых разборов сохраняются название модели и провайдер.</span></div>'+
+ '<div class="v6-source-row"><b>Хуанли и астрономия</b><span>lunar-javascript формирует китайские календарные занятия, astronomy-engine — положения и фазы небесных тел. Вручную заданные правила переводят их в категории «работа», «финансы» и другие. Нейросеть здесь не участвует.</span></div>'+
+ '<div class="v6-source-row"><b>Четыре натальные схемы</b><span>NatalEngine вычисляет западные, ведические, Human Design и Gene Keys показатели по данным рождения. Толкования заранее написаны; достоверная предсказательная точность для жизненных исходов не установлена.</span></div>'+
+ '<div class="v6-source-row"><b>Личные данные</b><span>'+esc(psychology?(psychology.archive?'Передан полный архив в этот браузер.':'Передана ограниченная сводка: дневники и ответы тестов не копировались.'):'Нет подключённой Карты сознания.')+'</span></div>'+
+ '</details>';
+ root.innerHTML=out;
  root.querySelectorAll('[data-v5-horizon]').forEach(b=>b.onclick=()=>{forecastHorizon=b.dataset.v5Horizon;try{localStorage.setItem(FORECAST_KEY,forecastHorizon)}catch{}paintForecast(st())});
- root.querySelectorAll('[data-v5-date]').forEach(b=>b.onclick=()=>{forecastHorizon='day';try{localStorage.setItem(FORECAST_KEY,'day')}catch{}app.selectDate(b.dataset.v5Date)});
+ root.querySelectorAll('[data-v5-date],[data-v6-date]').forEach(b=>b.onclick=()=>{
+  forecastHorizon='day';try{localStorage.setItem(FORECAST_KEY,'day')}catch{}
+  app.selectDate(b.dataset.v5Date||b.dataset.v6Date);
+ });
 }
 
 function sanitiseSnapshot(value){
