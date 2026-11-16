@@ -708,6 +708,163 @@ function paint(){
  highlightMonth(model,state);
  paintForecast(state);
 }
+
+const forecastLoading=new Set(),forecastFailed=new Set();
+function forecastShift(date,n){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function forecastRange(date,horizon){
+ if(horizon==='day')return [date];
+ const d=new Date(date+'T12:00:00');
+ if(horizon==='week'){const monday=forecastShift(date,-((d.getDay()+6)%7));return Array.from({length:7},(_,i)=>forecastShift(monday,i))}
+ const first=date.slice(0,7)+'-01',last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+ return Array.from({length:last},(_,i)=>date.slice(0,7)+'-'+String(i+1).padStart(2,'0'));
+}
+function forecastCacheKey(ym,state){return [ym,state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',state.birth||'',state.birthtime||'',state.birthZone||''].join('|')}
+function requireForecastModel(ym,state){
+ const k=forecastCacheKey(ym,state);
+ if(cache[k]||forecastLoading.has(k)||forecastFailed.has(k))return;
+ forecastLoading.add(k);
+ const tz=state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+ fetch('/api/astro-planner?month='+encodeURIComponent(ym)+'&tz='+encodeURIComponent(tz),
+ {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({birth:state.birth||'',birthtime:state.birthtime||'',birthZone:state.birthZone||''})})
+ .then(async r=>{const data=await r.json();if(!r.ok||!Array.isArray(data.days))throw Error(data.error||'Нет данных календаря');cache[k]=data;})
+ .catch(()=>forecastFailed.add(k))
+ .finally(()=>{forecastLoading.delete(k);if(visible())paintForecast(st())});
+}
+function archiveGoals(){
+ const a=psychology?.archive?.goals;
+ if(Array.isArray(a)&&a.length)return a.filter(g=>g&&g.status==='active').map(g=>({
+ id:g.id,title:g.text||g.title||'',probability:typeof g.plan?.probability==='number'&&Number.isFinite(g.plan.probability)?Math.max(0,Math.min(1,g.plan.probability)):null,
+ steps:Array.isArray(g.plan?.steps)?g.plan.steps.slice(0,4):[],
+ supports:Array.isArray(g.plan?.factors?.supports)?g.plan.factors.supports.slice(0,3):[],
+ risks:Array.isArray(g.plan?.factors?.risks)?g.plan.factors.risks.slice(0,3):[],
+ history:Array.isArray(g.history)?g.history.slice(-10):[]
+ }));
+ return (psychology?.goals||[]).map(g=>({
+ id:g.id,title:g.title,probability:g.modelProbability??null,steps:g.nextSteps||[],
+ supports:g.supportFactors||[],risks:g.riskFactors||[],history:[]
+ }));
+}
+function forecastTimeLabel(start,end){
+ const short=d=>new Date(d+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+ return start===end?datePretty(start):short(start)+' — '+short(end);
+}
+function forecastRow(label,text,type){
+ return '<div class="v5-signal '+(type||'')+'"><span>'+esc(label)+'</span><div>'+esc(text)+'</div></div>';
+}
+function forecastTimeline(days,horizon){
+ if(horizon==='day')return '';
+ const shown=horizon==='week'?days:days.filter(x=>x.item?.overall==='good'||x.item?.overall==='caution').slice(0,9);
+ if(!shown.length)return '<p class="v5-faded">Календарные расчёты для этого периода пока не загружены.</p>';
+ return '<div class="v5-timeline">'+shown.map(d=>{
+ const sign=d.item?.overall||'neutral';
+ const label=sign==='good'?'Традиционно подходит':sign==='caution'?'Традиционно осторожнее':'Без акцента';
+ return '<button class="v5-tile '+sign+'" data-v5-date="'+esc(d.date)+'"><b>'+esc(new Date(d.date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short'}))+'</b><span>'+esc(label)+'</span></button>';
+ }).join('')+'</div>';
+}
+function forecastEvidence(start,end){
+ const a=psychology?.archive;
+ if(!a)return '';
+ const year=+end.slice(0,4);
+ const hypotheses=(Array.isArray(a.hypotheses)?a.hypotheses:[])
+ .filter(x=>x&&x.status==='pending'&&Number(x.year)===year).slice(0,3);
+ const research=(Array.isArray(a.researchHypotheses)?a.researchHypotheses:[])
+ .filter(x=>x&&x.status==='active'&&(!x.expectedBy||(x.expectedBy>=start&&x.expectedBy<=end))).slice(0,3);
+ const intentions=(Array.isArray(a.intentions)?a.intentions:[])
+ .filter(x=>x&&x.status==='active'&&Number(x.year)===year).slice(0,2);
+ let out='';
+ if(hypotheses.length){
+ out+='<div class="v5-kicker">Годовые гипотезы Карты · ещё не подтверждены</div>';
+ out+=hypotheses.map(h=>forecastRow('Основание '+(h.confidence||1)+'/3',h.claim,'hypothesis')).join('');
+ }
+ if(research.length){
+ out+='<div class="v5-kicker">Проверяемые психологические гипотезы</div>';
+ out+=research.map(h=>forecastRow(h.expectedBy||'Открыта',h.claim,'hypothesis')).join('');
+ }
+ if(intentions.length){
+ out+='<div class="v5-kicker">Активные намерения</div>';
+ out+=intentions.map(h=>forecastRow(String(h.year||year),h.claim,'')).join('');
+ }
+ return out;
+}
+function forecastCheckins(end){
+ const keys=Object.keys(checkins).filter(k=>k<=end&&currentCheckin(k)).sort().slice(-7);
+ if(!keys.length)return '';
+ const sums={energy:0,stress:0,focus:0};
+ keys.forEach(k=>{const c=currentCheckin(k);for(const prop of Object.keys(sums))sums[prop]+=c[prop]});
+ const avg=x=>(sums[x]/keys.length).toFixed(1);
+ return '<div class="v5-track">Последние '+keys.length+' самоотчётов к этой дате: энергия '+avg('energy')+'/5, стресс '+avg('stress')+'/5, внимание '+avg('focus')+'/5. Это наблюдаемый фон, не прогноз состояния.</div>';
+}
+function paintForecast(state){
+ const root=document.getElementById('v5-forecast');if(!root)return;
+ const dates=forecastRange(state.selected,forecastHorizon),start=dates[0],end=dates[dates.length-1];
+ for(const ym of new Set(dates.map(x=>x.slice(0,7))))requireForecastModel(ym,state);
+ const days=dates.map(date=>{
+ const model=cache[forecastCacheKey(date.slice(0,7),state)];
+ return {date,item:model?.days?.find(x=>x.date===date)};
+ });
+ const ready=days.filter(x=>x.item),good=ready.filter(x=>x.item.overall==='good').length,caution=ready.filter(x=>x.item.overall==='caution').length;
+ const goals=archiveGoals(),context=psychology?.archive;
+ const taskDates=(state.goals||[]).filter(x=>x.date>=start&&x.date<=end).map(x=>({date:x.date,text:x.name,kind:'Цель'}));
+ const experimental=(psychology?.experiments||[]).filter(x=>x.due>=start&&x.due<=end).map(x=>({date:x.due,text:x.action,kind:'Проверка'}));
+ const tasks=[...taskDates,...experimental].sort((a,b)=>a.date.localeCompare(b.date));
+ const firstAction=tasks[0]?.text||goals.find(g=>g.steps.length)?.steps?.[0]||'Выбрать один проверяемый шаг по главной цели';
+ const dominant=[];
+ for(const item of ready.flatMap(x=>x.item.categories||[])){
+   let category=dominant.find(v=>v.id===item.id);
+   if(!category){category={id:item.id,name:item.name,good:0,caution:0};dominant.push(category)}
+   if(item.level==='good')category.good++;
+   if(item.level==='caution')category.caution++;
+ }
+ dominant.sort((a,b)=>b.good-a.good||a.caution-b.caution);
+ const best=dominant.filter(x=>x.good>0).slice(0,2);
+ const isDay=forecastHorizon==='day',isWeek=forecastHorizon==='week';
+ const title=isDay?'План на выбранный день':isWeek?'Прогноз на неделю':'Прогноз на месяц';
+ const description=isDay?'Практические шаги и контекст на этот день.':isWeek?'Неделя: контрольные точки, нагрузка и традиционный календарный фон.':'Месяц: цели, сроки, гипотезы и лучшие дни по традиционным правилам.';
+ let html='<div class="v5-top"><div><div class="v5-kicker">ПЕРСОНАЛЬНЫЙ ОБЗОР · '+esc(forecastTimeLabel(start,end))+'</div><h2>'+title+'</h2><p>'+description+'</p></div><div class="v5-horizons" role="group" aria-label="Горизонт прогноза">';
+ for(const [id,label] of [['day','День'],['week','Неделя'],['month','Месяц']])html+='<button type="button" data-v5-horizon="'+id+'" aria-pressed="'+String(forecastHorizon===id)+'">'+label+'</button>';
+ html+='</div></div>';
+ html+='<div class="v5-summary"><section class="v5-summary-main"><div class="v5-kicker">ОСНОВНОЙ ПРИОРИТЕТ</div><h3>'+esc(firstAction)+'</h3><p>'+(tasks.length?'В периоде '+tasks.length+' контрольных точек из целей и экспериментов.':'Это предложение по организации дел, а не предсказание события.')+'</p></section>';
+ html+='<section class="v5-summary-side"><div class="v5-kicker">КАЛЕНДАРНЫЙ ФОН · СИМВОЛИЧЕСКИЙ</div><strong>'+good+' / '+ready.length+'</strong><p>Дней с преобладанием традиционно подходящих категорий. Осторожнее: '+caution+'. Это не вероятность успеха.</p></section></div>';
+ if(!psychology){
+ html+='<div class="v5-connect-alert"><div><b>Психологическая Карта ещё не подключена</b><p>В Карте есть оценки исполнения целей, факторы, прогнозные гипотезы и эксперименты. Сейчас эти данные недоступны планнеру: приложения хранят их на разных доменах.</p></div><a href="'+ORIGINAL_MAP_ORIGIN+'/?research=1" target="_blank" rel="noopener noreferrer">Открыть Карту и передать сводку ↗</a></div>';
+ }else{
+ const stale=Date.now()-Number(psychology.exportedAt||0)>7*86400000;
+ html+='<div class="v5-psych-context"><div class="v5-context-head"><b>Психологический прогноз · ваша Карта</b><span>'+(context?'Полная Карта':'Сводка')+(stale?' · данные устарели':'')+'</span></div>';
+ if(goals.length){
+ html+='<div class="v5-goal-grid">'+goals.slice(0,4).map(g=>{
+ const valid=typeof g.probability==='number'&&Number.isFinite(g.probability)&&g.probability>=0&&g.probability<=1;
+ const percent=valid?Math.round(g.probability*100):null;
+ let x='<article class="v5-goal"><div class="v5-goal-header"><b>'+esc(g.title)+'</b><span>'+(valid?percent+'%':'Нет оценки')+'</span></div>';
+ if(valid)x+='<div class="v5-meter"><i style="width:'+percent+'%"></i></div><p class="v5-foot">Внутренняя оценка достижения цели из модели Карты. Не статистически проверенная вероятность.</p>';
+ if(g.steps.length)x+='<p><b>Следующий шаг:</b> '+esc(g.steps[0])+'</p>';
+ if(g.supports.length)x+='<p><b>Опора:</b> '+esc(g.supports[0])+'</p>';
+ if(g.risks.length)x+='<p><b>Риск:</b> '+esc(g.risks[0])+'</p>';
+ if(g.history.length>=2){
+ const last=g.history[g.history.length-1],prev=g.history[g.history.length-2];
+ if(Number.isFinite(last.probability)&&Number.isFinite(prev.probability)){
+ const delta=Math.round((last.probability-prev.probability)*100);
+ x+='<p class="v5-foot">Динамика последней переоценки: '+(delta>0?'+':'')+delta+' п.п.</p>';
+ }}
+ return x+'</article>';
+ }).join('')+'</div>';
+ }else html+='<p class="v5-faded">Активных целей в переданной Карте нет.</p>';
+ if(!context)html+='<p class="v5-foot">Чтобы увидеть жизненные гипотезы, историю целей и исходные психологические данные, в разделе «Исследование» основной Карты нажмите «Передать всю Карту в планнер». Передача включает личные записи, поэтому выполняется только по вашему действию.</p>';
+ else html+=forecastEvidence(start,end);
+ html+=forecastCheckins(end)+'</div>';
+ }
+ html+='<div class="v5-columns"><section><div class="v5-kicker">КОНКРЕТНЫЕ ДЕЛА И СРОКИ</div>';
+ html+=tasks.length?tasks.slice(0,10).map(x=>forecastRow(x.kind+' · '+x.date,x.text,'')).join(''):'<p class="v5-faded">На период не назначены сроки. Добавьте их в целях или проверках Карты.</p>';
+ html+='</section><section><div class="v5-kicker">ТРАДИЦИОННЫЕ КАЛЕНДАРНЫЕ СИГНАЛЫ</div>';
+ if(best.length)html+='<p class="v5-forecast-copy">По символическим расчётам чаще выделяются: '+esc(best.map(x=>x.name+' ('+x.good+' дн.)').join(', '))+'. Сопоставьте с реальными обязательствами.</p>';
+ else html+='<p class="v5-faded">Явного календарного акцента по выбранному периоду нет.</p>';
+ if(!ready.length||ready.length<dates.length)html+='<p class="v5-foot">Расчёты загружены для '+ready.length+' из '+dates.length+' дней. Данные ещё догружаются или недоступны.</p>';
+ html+=forecastTimeline(days,forecastHorizon)+'</section></div>';
+ html+='<div class="v5-foot v5-method">Метод: сроки, цели, самоотчёты и гипотезы берутся из ваших данных; традиционные обозначения — из календарных методов. Фактическая вероятность события не выводится из астрологии, Хуанли или чисел. Для психологической оценки необходимы актуальные наблюдения.</div>';
+ root.innerHTML=html;
+ root.querySelectorAll('[data-v5-horizon]').forEach(b=>b.onclick=()=>{forecastHorizon=b.dataset.v5Horizon;try{localStorage.setItem(FORECAST_KEY,forecastHorizon)}catch{}paintForecast(st())});
+ root.querySelectorAll('[data-v5-date]').forEach(b=>b.onclick=()=>{forecastHorizon='day';try{localStorage.setItem(FORECAST_KEY,'day')}catch{}app.selectDate(b.dataset.v5Date)});
+}
+
 function sanitiseSnapshot(value){
  if(!value||value.version!==1||!['conscious-map-v2','conscious-map'].includes(value.source))throw Error('Неподдерживаемый формат');
  const goals=Array.isArray(value.goals)?value.goals.slice(0,12):[];
