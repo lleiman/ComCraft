@@ -284,6 +284,7 @@ const levels={good:'Подходит по традиции',neutral:'Без ос
 const short={good:'Подходит',neutral:'Ровно',caution:'Осторожно'};
 const goalKinds={work:'work',creative:'creative',relationship:'relationship',learning:'learning',health:'rest'};
 let active='all',lens='all',view='month',cache={},loading={},error='';
+let layersOpen=false, calculationsOpen=false, mapTransferError='';
 let psychology=null,checkins={};
 try{
  active=localStorage.getItem('iytn_planner_category')||'all';
@@ -316,7 +317,7 @@ function dayDiff(from,to){const a=Date.parse(from+'T12:00:00'),b=Date.parse(to+'
 function contentHeader(){
  return '<div class="v3-overline">IT’S YOUR TIME NOW · DECISION SYSTEM</div><h1>Планнер <em>сознания и времени.</em></h1>'+
  '<p class="lead v3-lead">Один календарь для задач, психологических наблюдений и традиционных временных систем. Вначале реальные сроки и ваше состояние; ниже символический контекст.</p>'+
- '<div class="v3-top-tools"><div class="v3-lenses" role="group" aria-label="Система рекомендаций">'+
+ '<div class="v3-top-tools"><div class="v3-link-actions"><button type="button" data-v3-teachings>Все учения</button><button type="button" data-v3-calculations>Расчёты выбранного дня</button></div><div class="v3-lenses" role="group" aria-label="Система рекомендаций">'+
  [['all','Все системы'],['psychology','Психология'],['astrology','Астрология']].map(x=>'<button data-v3-lens="'+x[0]+'" aria-pressed="'+(lens===x[0])+'">'+x[1]+'</button>').join('')+
  '</div><div class="v3-cats" role="group" aria-label="Область дел">'+tabs.map(x=>'<button data-v3-cat="'+x[0]+'" aria-pressed="'+(active===x[0])+'">'+x[1]+'</button>').join('')+'</div></div>'
 }
@@ -325,10 +326,10 @@ function calendar(){
  // Keep legacy calendar and all existing engines intact. Recompose them rather than patching backend rendering.
  h=h.replace(/^<div class="eyebrow">PERSONAL TIME MAP<\/div><h1>Ваш <em>календарь\.<\/em><\/h1><p class="lead">[\s\S]*?<\/p>/,contentHeader());
  h=h.replace('<div class="card"><div class="flex">','<div class="v3-workbench"><section class="v3-left"><div class="card v3-calendar"><div class="flex v3-month-bar">');
- h=h.replace('<div class="calendar-toolbar">','<details class="v3-filter-drawer"><summary>Календарные слои и поиск</summary><div class="calendar-toolbar">');
+ h=h.replace('<div class="calendar-toolbar">','<details id="v3-teaching-layers" class="v3-filter-drawer"'+(layersOpen?' open':'')+'><summary>Нумерология, астрология и другие слои</summary><div class="calendar-toolbar">');
  h=h.replace('<div class="calendar" id="calendar-grid">','</details><div class="v3-mode-row"><div class="v3-view-switch"><button data-v3-view="month" aria-pressed="'+(view==='month')+'">Месяц</button><button data-v3-view="week" aria-pressed="'+(view==='week')+'">Неделя</button></div><button data-v3-today class="v3-today">Сегодня</button></div><div class="v3-legend"><span><i class="astro-dot good"></i>Традиционно подходит</span><span><i class="astro-dot caution"></i>Осторожнее</span><span><i class="v3-psy-marker"></i>Контрольная точка</span></div><div class="calendar" id="calendar-grid">');
  h=h.replace(/<div class="section flex"><h2>Ваш день<\/h2><span>[\s\S]*?<\/span><\/div>/,'');
- h=h.replace('<div class="card" id="caldayevents">','<div id="astro-month" class="v3-month-highlights"><div class="astro-loading">Составляем календарь...</div></div></section><section class="v3-right"><section id="iytn-google-calendar" class="card iytn-google-calendar" aria-label="Google Календарь"></section><div id="astro-day" class="astro-day-panel"><div class="astro-loading">Подготавливаем ваш день...</div></div></section></div><details class="v3-reference"><summary>Все расчёты, события и дополнительные учения</summary><div class="card" id="caldayevents">');
+ h=h.replace('<div class="card" id="caldayevents">','<section id="v3-map-connection" class="v3-source-card" aria-label="Связь с Картой сознания"></section><div id="astro-month" class="v3-month-highlights"><div class="astro-loading">Составляем календарь...</div></div></section><section class="v3-right"><section id="iytn-google-calendar" class="card iytn-google-calendar" aria-label="Google Календарь"></section><div id="astro-day" class="astro-day-panel"><div class="astro-loading">Подготавливаем ваш день...</div></div></section></div><details id="v3-day-calculations" class="v3-reference"'+(calculationsOpen?' open':'')+'><summary>Расчёты выбранного дня и события месяца</summary><div class="card" id="caldayevents">');
  h+='</details>';
  setTimeout(load,0);
  return h;
@@ -338,6 +339,17 @@ function bind(){
  document.querySelectorAll('[data-v3-cat]').forEach(b=>b.onclick=()=>{active=b.dataset.v3Cat;savePref();paint()});
  document.querySelectorAll('[data-v3-view]').forEach(b=>b.onclick=()=>{view=b.dataset.v3View;paint()});
  document.querySelectorAll('[data-v3-today]').forEach(b=>b.onclick=()=>app.selectToday());
+ document.querySelectorAll('[data-v3-teachings]').forEach(b=>b.onclick=()=>window.go('teachings'));
+ const layers=document.getElementById('v3-teaching-layers');
+ const calculations=document.getElementById('v3-day-calculations');
+ if(layers)layers.ontoggle=()=>{layersOpen=layers.open};
+ if(calculations)calculations.ontoggle=()=>{calculationsOpen=calculations.open};
+ document.querySelectorAll('[data-v3-calculations]').forEach(b=>b.onclick=()=>{
+  if(!calculations)return;
+  calculations.open=true;
+  calculations.querySelector('summary')?.focus();
+  calculations.scrollIntoView({block:'start'});
+ });
 }
 function markSelections(){
  document.querySelectorAll('[data-v3-lens]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v3Lens===lens)));
@@ -346,7 +358,7 @@ function markSelections(){
 }
 async function load(){
  if(!visible())return;
- bind();
+ bind();paintMapConnection();
  const state=st(),k=key(state);
  if(cache[k]){paint();return}
  if(loading[k])return;
@@ -444,7 +456,7 @@ function psychPanel(day,state){
  if(psychology.hypotheses?.length)out+='<details class="v3-secondary-details"><summary>Проверяемые гипотезы ('+psychology.hypotheses.length+')</summary>'+psychology.hypotheses.map(h=>'<p>'+esc(h.title)+'</p>').join('')+'</details>';
  out+='<div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'" target="_blank" rel="noopener noreferrer">Открыть оригинальную карту ↗</a><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Обновить из исследовательской V2 ↗</a><button type="button" data-v3-disconnect>Отключить</button></div>';
  }else{
- out+='<div class="v3-connect"><p>Свяжите локальную «Карту сознания V2», чтобы видеть свои цели и назначенные проверки рядом с календарём. Дневник и результаты тестов автоматически не передаются.</p><div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'" target="_blank" rel="noopener noreferrer">Открыть оригинальную карту ↗</a><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Связать исследовательскую V2 ↗</a></div></div>';
+ out+='<div class="v3-connect"><p>В «Карте сознания» откройте «Исследование» и нажмите «Передать контрольные даты». Сюда попадут активные цели, назначенные проверки и сводные числа.</p><div class="v3-link-actions"><a href="'+ORIGINAL_MAP_ORIGIN+'" target="_blank" rel="noopener noreferrer">Открыть оригинальную карту ↗</a><a href="'+MAP_ORIGIN+'/?from=time-planner" target="_blank" rel="noopener noreferrer">Связать исследовательскую V2 ↗</a></div></div>';
  }
  return out;
 }
@@ -495,6 +507,26 @@ function dayPanel(day,model,state){
   paint();
  };
 }
+function paintMapConnection(){
+ const box=document.getElementById('v3-map-connection');if(!box)return;
+ const origin=psychology?.source==='conscious-map-v2'?MAP_ORIGIN:ORIGINAL_MAP_ORIGIN;
+ const link='<div class="v3-link-actions"><a href="'+origin+'" target="_blank" rel="noopener noreferrer">Открыть Карту сознания ↗</a></div>';
+ let out='<div class="v3-section-top"><h3>Карта сознания</h3><span class="v3-chip '+(psychology?'connected':'')+'">'+(psychology?'Сводка получена':'Связь не настроена')+'</span></div>';
+ if(mapTransferError)out+='<p class="v3-muted-warning" role="status">'+esc(mapTransferError)+'</p>';
+ if(!psychology){
+  box.innerHTML=out+'<p class="v3-small">В Карте откройте «Исследование» и нажмите «Передать контрольные даты». Сводка появится в этом браузере.</p>'+link;
+  return;
+ }
+ const goals=psychGoals(),checks=psychology.experiments.filter(e=>e.due).sort((a,b)=>a.due.localeCompare(b.due));
+ const at=new Date(psychology.exportedAt);
+ out+='<p class="v3-small">'+(psychology.source==='conscious-map'?'Основная Карта':'Исследовательская V2')+' · обновлено '+esc(Number.isFinite(at.getTime())?at.toLocaleString('ru-RU'):'—')+'</p>';
+ out+='<p class="v3-small">Цели: '+goals.length+' · Проверки с датой: '+checks.length+' · Наблюдения в сводке: '+(psychology.stats?.evidenceCount||0)+'</p>';
+ if(goals.length)out+=goals.map(g=>'<div class="v3-real-task"><span>Цель</span><strong>'+esc(g.title)+'</strong></div>').join('');
+ if(checks.length)out+='<div class="v3-month-tasks">'+checks.map(e=>'<button type="button" data-v3-map-date="'+esc(e.due)+'"><time datetime="'+esc(e.due)+'">'+esc(e.due)+'</time><span>'+esc(e.action)+'</span></button>').join('')+'</div>';
+ else out+='<p class="v3-small">В переданной сводке нет проверок с назначенной датой. Создайте проверку в «Исследовании» и передайте сводку повторно, чтобы она появилась в календаре.</p>';
+ box.innerHTML=out+link;
+ box.querySelectorAll('[data-v3-map-date]').forEach(b=>b.onclick=()=>app.selectDate(b.dataset.v3MapDate));
+}
 function highlightMonth(model,state){
  const box=document.getElementById('astro-month');if(!box)return;
  const monthDays=model.days,events=monthDays.filter(d=>psychEvents(d.date).length);
@@ -507,12 +539,12 @@ function highlightMonth(model,state){
   return '<button type="button" data-v3-date="'+esc(date)+'"><time>'+esc(date.slice(-2))+'.'+esc(date.slice(5,7))+'</time><span>'+esc(title)+'</span></button>';
  }).join('')+'</div>';
  else body+='<p class="v3-small">Нет назначенных дат. Добавьте цель или эксперимент в Карте сознания, либо поставьте срок в разделе «Цели».</p>';
- if(!psychology)body+='<p class="v3-small">Карта сознания пока не связана.</p>';
+ 
  box.innerHTML=body;box.querySelectorAll('[data-v3-date]').forEach(b=>b.onclick=()=>app.selectDate(b.dataset.v3Date));
 }
 function paint(){
  if(!visible())return;
- bind();markSelections();
+ bind();markSelections();paintMapConnection();
  const state=st(),model=cache[key(state)];
  window.IYTN_GOOGLE_CALENDAR.update(state.selected,state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC');
  if(!model){if(error)showError(error);return}
@@ -539,13 +571,23 @@ if(importOrigin&&window.opener){
   if(event.origin!==importOrigin||event.source!==window.opener||event.data?.type!=='CONSCIOUS_MAP_TO_PLANNER_V1')return;
   try{
    const data=sanitiseSnapshot(event.data.payload);
-   psychology=data;localStorage.setItem(PSY_KEY,JSON.stringify(data));
-   history.replaceState(null,'',location.pathname);
+   localStorage.setItem(PSY_KEY,JSON.stringify(data));
+   psychology=data;mapTransferError='';
+   const url=new URL(location.href);
+   url.searchParams.delete('connect');
+   history.replaceState(null,'',url);
    lens='all';savePref();app.openCalendar();
-  }catch(e){console.error('Connection rejected',e)}
+  }catch{
+   mapTransferError='Планнер не смог сохранить сводку. Проверьте доступ к хранилищу браузера и повторите передачу.';
+   app.openCalendar();
+  }
  },{once:false});
  window.opener.postMessage({type:'IYTN_PLANNER_READY'},importOrigin);
 }
+window.addEventListener('storage', event=>{
+ if(event.key!==PSY_KEY)return;
+ try{psychology=event.newValue?sanitiseSnapshot(JSON.parse(event.newValue)):null;mapTransferError='';paint()}catch{}
+});
 app.setCalendar(calendar);
 app.setPaint(function(){legacyPaint();paint()});
 if(window.IYTN_GOOGLE_CALENDAR.landing())app.openCalendar();else app.render();
