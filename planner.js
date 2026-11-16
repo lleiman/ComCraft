@@ -820,6 +820,138 @@ function forecastCheckins(end){
  const avg=x=>(sums[x]/keys.length).toFixed(1);
  return '<div class="v5-track">Последние '+keys.length+' самоотчётов к этой дате: энергия '+avg('energy')+'/5, стресс '+avg('stress')+'/5, внимание '+avg('focus')+'/5. Это наблюдаемый фон, не прогноз состояния.</div>';
 }
+
+/* Day-first reading: full information for the selected date instead of placeholder "focus". */
+const dayReadingExtraCache=new Map(),dayReadingExtraInFlight=new Set();
+let dayReadingNatal=null,dayReadingNatalStarted=false;
+const dayLifeTopics={
+ work:{headline:'Работа, запуск и договорённости',why:'Взвесьте реальный срок, ресурсы и следующий шаг. Китайские даты используются лишь как традиционный контекст.'},
+ money:{headline:'Финансы и обязательства',why:'Фактический риск определяется условиями платежа и договора. Календарный символ не заменяет проверку реквизитов.'},
+ creative:{headline:'Творчество и производство',why:'Оцените готовность черновика и стоимость следующей итерации. Период не может гарантировать качество результата.'},
+ relationship:{headline:'Отношения, общение, встречи',why:'Проверяйте конкретные договорённости, а не интерпретацию чужих мотивов через календарь.'},
+ learning:{headline:'Исследования, обучение, мышление',why:'Разделяйте наблюдение, утверждение и проверку. Один материал за день ценнее непроверенного обобщения.'},
+ rest:{headline:'Тело, нагрузка и восстановление',why:'Используйте свои данные сна и самочувствия. Календарь не определяет состояние здоровья.'}
+};
+const dayLevelRu={good:'Традиционный акцент',neutral:'Без однозначного акцента',caution:'Традиционные ограничения'};
+function dayReadingExtras(date){
+ if(dayReadingExtraCache.has(date))return dayReadingExtraCache.get(date);
+ if(!dayReadingExtraInFlight.has(date)){
+  dayReadingExtraInFlight.add(date);
+  fetch('/api/day-systems?date='+encodeURIComponent(date)+'&time=12:00').then(async r=>{
+    const j=await r.json();if(!r.ok||j.error)throw Error(j.error||'Система временно недоступна');
+    dayReadingExtraCache.set(date,j);
+  }).catch(e=>dayReadingExtraCache.set(date,{_error:String(e.message||e)}))
+  .finally(()=>{dayReadingExtraInFlight.delete(date);if(visible()&&st().selected===date&&forecastHorizon==='day')paintForecast(st())});
+ }
+ return null;
+}
+function dayReadingNatalLoad(state){
+ if(dayReadingNatalStarted||!state.birth||!state.birthtime||!state.birthZone)return;
+ dayReadingNatalStarted=true;
+ Promise.resolve().then(()=>app.personalTeachings?.()).then(x=>{dayReadingNatal=x||null;})
+ .catch(e=>{dayReadingNatal={_error:String(e.message||e)};})
+ .finally(()=>{if(visible()&&forecastHorizon==='day')paintForecast(st())});
+}
+function dayReadingCategory(c){
+ const t=dayLifeTopics[c.id]||{headline:c.name,why:'Сопоставьте традиционную трактовку с реальными задачами.'};
+ const label=dayLevelRu[c.level]||'Символическое описание';
+ const symbols=c.why||'В календаре нет отдельных указаний для темы.';
+ return '<article class="v7-domain"><div class="v7-domain-top"><h3>'+esc(t.headline)+'</h3><span class="v7-tag '+esc(c.level)+'">'+esc(label)+'</span></div>'+
+ '<p class="v7-action"><b>Что сделать:</b> '+esc(c.do.replace(/^Практический вариант:\s*/,''))+'</p>'+
+ '<p class="v7-caution"><b>Что учесть:</b> '+esc(c.avoid)+'</p>'+
+ '<details class="v7-why"><summary>На чём основан этот акцент</summary><p>'+esc(symbols)+'</p><p>'+esc(t.why)+'</p><small>Статус получен из вручную заданной символической формулы, не из статистики успешных дней.</small></details></article>';
+}
+function dayReadingTeaching(t,day,extra,natal){
+ let e;
+ try{e=explainTeaching(t,day,extra||{},natal||null)}catch{return ''}
+ if(!e)return '';
+ const available=!(e.headline||'').match(/пока не рассчитан|пока не рассчитана|Рассчитываем|Загружаем/i);
+ const details='Источник: '+teachingOrigin(t.id);
+ return '<article class="v7-system"><div class="v7-system-title"><h4>'+esc(t.name)+'</h4><span>'+esc(e.scope)+'</span></div>'+
+ '<strong>'+esc(e.headline||'Результат недоступен')+'</strong>'+
+ '<p><b>Что означает:</b> '+esc(e.meaning)+'</p>'+
+ '<p><b>Как применить сегодня:</b> '+esc(e.practice)+'</p>'+
+ '<details><summary>Метод расчёта и ограничения</summary><p>'+esc(e.detail)+'</p><p class="v7-muted">'+esc(details)+'</p></details></article>';
+}
+function dayReadingView(state,day,goals,tasks){
+ const date=state.selected;
+ const extra=dayReadingExtras(date);
+ dayReadingNatalLoad(state);
+ const d=day?.item;
+ const current=date===todayIso();
+ const all=app.teachingsForDate?.(date)||[];
+ const pick=id=>all.find(x=>x.id===id);
+ const check=currentCheckin(date);
+ const sorted=tasks.slice().sort((a,b)=>a.date.localeCompare(b.date));
+ const oneGoal=goals.find(g=>g.steps?.length)||goals[0];
+ const dayName=datePretty(date);
+ const cats=d?.categories||[];
+ const good=cats.filter(c=>c.level==='good'),caution=cats.filter(c=>c.level==='caution');
+ const phase=d?.moon?.phase||'Фаза неизвестна';
+ const lunar=d?.moon?.sign||'не определён';
+ const sun=d?.sun?.sign||'не определён';
+ const huangli=d?.traditional||{yi:[],ji:[]};
+ const yi=(huangli.yi||[]).slice(0,5),ji=(huangli.ji||[]).slice(0,5);
+ const symbolicFocus=good.length?
+  'В принятой символической формуле отдельно выделяются: '+good.map(x=>x.name.toLowerCase()).join(', ')+'.':
+  caution.length?'Формула отмечает ограничения по направлениям: '+caution.map(x=>x.name.toLowerCase()).join(', ')+'.':
+  'Явного преобладающего акцента в формуле нет.';
+ const firstAction=sorted[0]?.text||oneGoal?.steps?.[0]||'Определите один измеримый результат, который важно получить до конца дня.';
+ const currentSignal=current&&check&&(check.stress>=4||check.energy<=2)
+ ?'В сегодняшнем самоотчёте отмечены '+(check.stress>=4?'высокий стресс':'сниженная энергия')+'. Сократите необязательные обязательства; это рекомендация по нагрузке, не предсказание.'
+ :oneGoal?'В Карте есть цель «'+oneGoal.title+'». Ни календарь, ни знак Луны не заменяют конкретный шаг по ней.':
+ 'Для индивидуального решения нужны реальные цели и наблюдения; пока показан календарный контекст и практические ориентиры.';
+ const headerTitle=current?'Сегодня: '+dayName:'Разбор дня: '+dayName;
+ let out='<div class="v7-head"><div><div class="v7-eyebrow">'+esc(state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC')+' · ДНЕВНАЯ КАРТИНА</div><h2>'+esc(headerTitle)+'</h2><p>Что происходит по используемым календарным системам, как это трактуется и какие действия можно из этого извлечь.</p></div><div class="v5-horizons" role="group" aria-label="Период">';
+ for(const [id,label] of [['day','День'],['week','Неделя'],['month','Месяц']])out+='<button type="button" data-v5-horizon="'+id+'" aria-pressed="'+String(forecastHorizon===id)+'">'+label+'</button>';
+ out+='</div></div>';
+ out+='<div class="v7-top-nav"><button type="button" data-v7-shift="-1">← Вчера</button><button type="button" data-v7-today>Сегодня</button><button type="button" data-v7-shift="1">Завтра →</button></div>';
+ if(!d){
+  out+='<div class="v7-loading"><b>Календарные расчёты ещё загружаются.</b><p>Дата: '+esc(dayName)+'. Если расчёты недоступны, не буду подменять их общими прогнозами.</p></div>';
+  rootDayReading(out);return;
+ }
+ out+='<section class="v7-story"><div class="v7-eyebrow">КАРТИНА ДНЯ · АСТРОНОМИЯ И ТРАДИЦИИ</div><h3>'+esc(d.moon.phase)+' · Луна в '+esc(lunar)+'</h3>';
+ out+='<p>На '+esc(dayName)+' Луна находится в знаке '+esc(lunar)+', освещённость диска '+esc(d.moon.illumination)+'%. Солнце — в '+esc(sun)+'. Это астрономически рассчитанные положения; традиционные школы приписывают им символические значения.</p>';
+ out+='<p>'+esc(symbolicFocus)+' Сопоставляйте их с фактическими задачами и доступными ресурсами: формула не измеряет вашу продуктивность и не предсказывает исход события.</p>';
+ if(d.events?.length)out+='<div class="v7-events"><b>События дня:</b> '+d.events.slice(0,4).map(e=>esc((e.at?e.at+' · ':'')+e.title)).join(' · ')+'</div>';
+ out+='</section>';
+ out+='<section class="v7-decide"><div><div class="v7-eyebrow">ВАШ ПРИОРИТЕТ</div><h3>'+esc(firstAction)+'</h3><p>'+esc(currentSignal)+'</p></div><div class="v7-source-tag">Основание: '+esc(sorted.length?'ваш дедлайн':oneGoal?'цель из Карты':'общее правило планирования')+'</div></section>';
+ out+='<div class="v7-sections"><div class="v7-section-title"><h3>1. Как провести этот день</h3><p>Шесть направлений с действиями и возможными ограничениями. Статусы справа отражают только традиционную модель, не личную вероятность успеха.</p></div><div class="v7-domains">';
+ const order=['work','money','creative','relationship','learning','rest'];
+ out+=order.map(id=>cats.find(c=>c.id===id)).filter(Boolean).map(dayReadingCategory).join('');
+ out+='</div></div>';
+ out+='<section class="v7-almanac"><div class="v7-section-title"><h3>2. Что именно говорит Хуанли</h3><p>Два списка традиционных занятий. Они описывают дату, но не оценивают личную ситуацию.</p></div><div class="v7-almanac-grid"><div><span>Традиционно подходит</span><p>'+esc(yi.length?yi.join(' · '):'Нет отмеченных занятий')+'</p></div><div><span>Традиционно нежелательно</span><p>'+esc(ji.length?ji.join(' · '):'Нет отмеченных занятий')+'</p></div></div></section>';
+ out+='<section class="v7-section-block"><div class="v7-section-title"><h3>3. Разбор по учениям</h3><p>Каждое учение даёт свой тип информации. Ни одно из них автоматически не превращает дату в проверенный прогноз событий.</p></div><div class="v7-systems">';
+ // All daily relevant systems; permanent natal profiles are separate below
+ const ids=['numerology','huangli','lunar','bazi','wuxing','qimen','tibetan','tzolkin'];
+ out+=ids.map(id=>pick(id)).filter(Boolean).map(t=>dayReadingTeaching(t,d,extra,dayReadingNatal)).join('');
+ out+='</div></section>';
+ if(extra?._error)out+='<p class="v7-muted">Часовая/тибетская система: '+esc(extra._error)+'. Точный расчёт пока недоступен.</p>';
+ else if(!extra)out+='<p class="v7-muted">Ци Мэнь и тибетский календарь: загружаем отдельные вычисления для этой даты…</p>';
+ if(dayReadingNatal&&!dayReadingNatal._error){
+  const natIds=['western','vedic','human','genekeys'];
+  out+='<details class="v7-more"><summary>4. Мои четыре натальные системы · постоянный личный профиль</summary><p class="v7-muted">Эти схемы описывают момент рождения и сами по себе не меняются каждый день. Натальные транзиты доступны отдельно.</p><div class="v7-systems">'+natIds.map(id=>pick(id)).filter(Boolean).map(t=>dayReadingTeaching(t,d,extra,dayReadingNatal)).join('')+'</div></details>';
+ }else if(state.birth&&state.birthtime)out+='<p class="v7-muted">Персональные натальные схемы: '+esc(dayReadingNatal?._error||'загружаются')+'.</p>';
+ if(d.personalAspects?.length)out+='<details class="v7-more"><summary>Аспекты выбранного дня к натальной схеме · '+d.personalAspects.length+'</summary>'+d.personalAspects.map(x=>'<p>'+esc(x.title+' · орбис '+x.orb+'°. '+x.explanation)+'</p>').join('')+'</details>';
+ out+='<section class="v7-personal"><div class="v7-section-title"><h3>5. Мой план и психологический контекст</h3><p>Здесь должны влиять на решение реальные задачи, цели, наблюдения и проверки, а не число записей по сферам.</p></div>';
+ if(sorted.length)out+='<div class="v7-personal-tasks">'+sorted.slice(0,5).map(x=>'<div><span>'+esc(x.kind)+' · '+esc(x.date)+'</span><b>'+esc(x.text)+'</b></div>').join('')+'</div>';
+ if(goals.length)out+='<div class="v7-goals">'+goals.slice(0,3).map(g=>{
+  const p=typeof g.probability==='number'&&Number.isFinite(g.probability)?Math.round(g.probability*100):null;
+  return '<div class="v7-goal"><b>'+esc(g.title)+'</b>'+(p!==null?'<span>Оценка языковой модели: '+p+'%. Это не проверенная вероятность события.</span>':'')+(g.steps?.length?'<p>Следующее действие: '+esc(g.steps[0])+'</p>':'')+(g.risks?.length?'<p>Что может мешать: '+esc(g.risks[0])+'</p>':'')+'</div>';
+ }).join('')+'</div>';
+ if(!psychology)out+='<p class="v7-muted">Твоя личная Карта пока не подключена к этому браузеру. Чтобы здесь появились личные цели и гипотезы, передай сводку из Карты сознания.</p><a class="v7-link" href="'+ORIGINAL_MAP_ORIGIN+'/?research=1" target="_blank" rel="noopener noreferrer">Подключить личную Карту ↗</a>';
+ else if(!sorted.length&&!goals.length)out+='<p class="v7-muted">Сводка подключена, но активных целей и проверок нет. Не подставляю искусственные оценки.</p>';
+ out+='</section>';
+ out+='<details class="v7-method"><summary>Откуда берутся результаты и насколько им можно доверять</summary><p><b>Расчётная часть:</b> astronomy-engine для небесных положений; lunar-javascript для Хуанли; серверный метод для Ци Мэнь и тибетского календаря; отдельный NatalEngine для личных натальных систем.</p><p><b>Интерпретации:</b> словарь традиций и редакционные практические рекомендации. Языковая модель не генерирует ежедневные трактовки в планнере.</p><p><b>Психология:</b> задачи и цели из локального профиля, дополнительные модельные оценки из Карты сознания. Они не являются калиброванными статистическими вероятностями.</p></details>';
+ rootDayReading(out);
+ function rootDayReading(html){
+  const root=document.getElementById('v5-forecast');if(!root)return;root.innerHTML=html;
+  root.querySelectorAll('[data-v5-horizon]').forEach(b=>b.onclick=()=>{forecastHorizon=b.dataset.v5Horizon;try{localStorage.setItem(FORECAST_KEY,forecastHorizon)}catch{}paintForecast(st())});
+  root.querySelectorAll('[data-v7-shift]').forEach(b=>b.onclick=()=>app.selectDate(forecastShift(date,Number(b.dataset.v7Shift))));
+  root.querySelectorAll('[data-v7-today]').forEach(b=>b.onclick=()=>app.selectToday());
+ }
+}
+
 function paintForecast(state){
  const root=document.getElementById('v5-forecast');if(!root)return;
  const dates=forecastRange(state.selected,forecastHorizon),start=dates[0],end=dates[dates.length-1];
@@ -831,6 +963,7 @@ function paintForecast(state){
  const ownTasks=(state.goals||[]).filter(x=>x.date>=start&&x.date<=end).map(x=>({date:x.date,text:x.name,kind:'Цель из планнера'}));
  const checks=(psychology?.experiments||[]).filter(x=>x.due>=start&&x.due<=end).map(x=>({date:x.due,text:x.action,kind:'Проверка из Карты'}));
  const tasks=[...ownTasks,...checks].sort((a,b)=>a.date.localeCompare(b.date));
+ if(forecastHorizon==='day'){dayReadingView(state,days[0],goals,tasks);return;}
  const today=currentCheckin(state.selected),isCurrent=state.selected===todayIso();
  const goalWithPlan=goals.find(x=>x.steps?.length);
  let recommendation,reason,action,sourceLabel,guard;
