@@ -651,11 +651,9 @@ function dayPanel(day,model,state){
  if(lens==='all'||lens==='psychology')out+='<section class="v3-source-card v3-psych-card">'+psychPanel(day,state)+'</section>';
  if(lens==='all'||lens==='astrology')out+='<section class="v3-source-card v3-astro-card">'+astroPanel(day,model,state)+'</section>';
  out+='</details>';
- out+='<details class="v5-reference" id="v5-archive-ref"><summary>Психологический архив и исходные записи</summary>'+archivePanel(day.date)+'</details>';
  out+='<details class="v5-reference" id="v5-teachings-ref"><summary>Все 20 учений · расчёты и подробные объяснения</summary>'+teachingsPanel(day)+'</details>';
  if(lens==='all')out+='<div class="v3-principle">При расхождении рекомендаций дедлайны, наблюдаемые данные и ваше самочувствие имеют приоритет над символическими календарными правилами.</div>';
  const root=document.getElementById('astro-day');if(!root)return;root.innerHTML=out;
- const records=root.querySelector('#v5-archive-ref');if(records)records.ontoggle=()=>{if(records.open)bindArchive(records)};
  const traditions=root.querySelector('#v5-teachings-ref');if(traditions)traditions.ontoggle=()=>{if(traditions.open)void fillTeachings(day)};
  root.querySelectorAll('[data-v3-shift]').forEach(b=>b.onclick=()=>{
  const d=new Date(day.date+'T12:00:00');d.setDate(d.getDate()+Number(b.dataset.v3Shift));
@@ -685,6 +683,26 @@ function paintMapConnection(){
  const count=archiveGoals().length;
  const detail=psychology?(count?'Есть '+count+' активных целей. ':'')+'Сохранено в этом браузере.':'Пока нет личных целей в планнере.';
  box.innerHTML='<div class="v7-map-mini"><b>Личная Карта</b><span>'+esc(detail)+'</span><a href="'+ORIGINAL_MAP_ORIGIN+'/?research=1" target="_blank" rel="noopener noreferrer">'+(psychology?'Обновить ↗':'Подключить ↗')+'</a></div>'+(mapTransferError?'<p class="v3-muted-warning">'+esc(mapTransferError)+'</p>':'');
+ if(psychology?.archive){
+  const warning=document.createElement('div');
+  warning.className='v8-privacy';
+  warning.innerHTML='<strong>В браузере есть полная копия психологического архива.</strong><p>Для рекомендаций достаточно целей и сводки. Дневники, тесты и документы здесь не нужны. Оригинал остаётся в «Карте сознания».</p><button type="button" data-v8-strip-archive>Удалить полную копию только из планнера</button>';
+  box.appendChild(warning);
+  warning.querySelector('[data-v8-strip-archive]').onclick=()=>{
+   if(!window.confirm('Удалить полную копию архива только из браузера планнера? Цели и краткая сводка останутся, исходные данные в Карте сознания не изменятся.'))return;
+   const clean={...psychology};delete clean.archive;
+   try{
+    localStorage.setItem(PSY_KEY,JSON.stringify(clean));
+    psychology=clean;
+    mapTransferError='Полная копия удалена из планнера; цели и краткая сводка сохранены.';
+    paint();
+   }catch(e){
+    mapTransferError='Локальную копию не удалось удалить: '+String(e&&e.message||e);
+    paintMapConnection();
+   }
+  };
+ }
+
 }
 function highlightMonth(model,state){
  const box=document.getElementById('astro-month');if(!box)return;
