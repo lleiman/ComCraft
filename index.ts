@@ -30,7 +30,42 @@ function baziData(date,time,hasTime){const [y,m,d,hh,mm]=strictBirth(date,time);
 
 
 
-function daySystems(date,time){strictBirth(date,time);const [y,m,d]=date.split('-').map(Number),stamp=date.replace(/-/g,'')+time.slice(0,2),answer={qimen:null,tibetan:null,errors:{}};try{const raw=chartToObject(generateChartByDatetime(stamp));answer.qimen={method:'拆補 · Chai Bu',solarTerm:raw['節氣']||'',yuan:raw['三元']||'',polarity:raw['陰陽']||'',ju:raw['局數']||'',year:raw['年柱']||'',month:raw['月柱']||'',day:raw['日柱']||'',hour:raw['時柱']||'',chiefStar:raw['值符']||'',chiefDoor:raw['值使']||'',doors:raw['天門']||{},stars:raw['九星']||{}}}catch(err){answer.errors.qimen=String(err?.message||err).slice(0,180)}try{const a=new CalendarTibetan().fromGregorian(y,m,d).get();answer.tibetan={school:'Phugpa',cycle:a[0],year:a[1],month:a[2],leapMonth:Boolean(a[3]),day:a[4],leapDay:Boolean(a[5])}}catch(err){answer.errors.tibetan=String(err?.message||err).slice(0,180)}return answer}
+// Tibetan electional traditions: provide only source-grounded action-specific indicators.
+// Date conversion is Phugpa; weekday & Tibetan lunar day are a PARTIAL auspiciousness assessment.
+// Me-wa, par-kha, gyukar (lunar mansion), and natal animal compatibility are NOT derived here.
+function tibetanDayGuidance(month,day,weekday){
+ const practices={
+  8:{title:'День практик Тары и Будды Медицины',recommendation:'В тибетских буддийских общинах этот лунный день выделяют для соответствующих медитаций и подношений.'},
+  10:{title:'День Гуру Ринпоче',recommendation:'Традиционно выделяют для практик Гуру Ринпоче и групповых подношений цог.'},
+  15:{title:'Полнолунный день практик',recommendation:'В лунном календаре практик этот день связывают с обновлением обетов и созерцанием. Точная астрономическая фаза может отличаться от номера тибетского дня.'},
+  25:{title:'День дакини',recommendation:'Традиционно выделяют для практик дакини и групповых подношений цог.'},
+  29:{title:'День защитников Дхармы',recommendation:'В традиции этот день выделяют для посвящённых защитникам Дхармы практик.'},
+  30:{title:'День новолуния в календаре практик',recommendation:'Традиция выделяет этот лунный день для обновления обязательств и практик Будды Шакьямуни; точный момент новолуния проверяется отдельно.'}
+ };
+ const flagSets={
+  0:[10,22],1:[7,19],2:[4,16,28],3:[1,13,25]
+ };
+ // Months 1,5,9 | 2,6,10 | 3,7,11 | 4,8,12 in traditional prayer-flag avoidance table.
+ const group=(month-1)%4,avoidFlags=(flagSets[group]||[]).includes(day);
+ const indications=[];
+ if(practices[day])indications.push({activity:'Духовная практика',polarity:'traditionally_marked',headline:practices[day].title,
+  meaning:practices[day].recommendation,source:'https://fpmt.org/teachers/zopa/advice/suggested-monthly-pujas-for-fpmt-centers/'});
+ if(avoidFlags)indications.push({activity:'Вывешивание молитвенных флагов',polarity:'traditionally_avoided',
+  headline:'Традиционный день, когда не рекомендуют вывешивать молитвенные флаги',
+  meaning:'Это правило для конкретной ритуальной практики; оно не означает неблагоприятность дня для работы, финансов или здоровья.',
+  source:'https://tibetancalendar.org/great-days/'});
+ return {
+  coverage:['тибетский лунный день (Пхугпа)','день недели','даты традиционных практик','дни вывешивания молитвенных флагов'],
+  notCalculated:['лунная стоянка (гьюкар)','дневное число мэва','дневная триграмма паркха','личное соответствие знака животного'],
+  weekday:['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'][weekday],
+  indications,
+  evaluation:indications.length?'Частичная оценка по конкретным действиям':'Для этой даты среди подключённых проверенных правил нет отдельной отметки. Это не оценка благоприятности всех дел.',
+  sources:['https://fpmt.org/media/resources/dharma-dates/dates-explained/','https://tibetancalendar.org/great-days/'],
+  fullyCalculated:false
+ };
+}
+
+function daySystems(date,time){strictBirth(date,time);const [y,m,d]=date.split('-').map(Number),stamp=date.replace(/-/g,'')+time.slice(0,2),answer={qimen:null,tibetan:null,errors:{}};try{const raw=chartToObject(generateChartByDatetime(stamp));answer.qimen={method:'拆補 · Chai Bu',solarTerm:raw['節氣']||'',yuan:raw['三元']||'',polarity:raw['陰陽']||'',ju:raw['局數']||'',year:raw['年柱']||'',month:raw['月柱']||'',day:raw['日柱']||'',hour:raw['時柱']||'',chiefStar:raw['值符']||'',chiefDoor:raw['值使']||'',doors:raw['天門']||{},stars:raw['九星']||{}}}catch(err){answer.errors.qimen=String(err?.message||err).slice(0,180)}try{const a=new CalendarTibetan().fromGregorian(y,m,d).get();answer.tibetan={school:'Phugpa',cycle:a[0],year:a[1],month:a[2],leapMonth:Boolean(a[3]),day:a[4],leapDay:Boolean(a[5]),electional:tibetanDayGuidance(a[2],a[4],new Date(Date.UTC(y,m-1,d)).getUTCDay())}}catch(err){answer.errors.tibetan=String(err?.message||err).slice(0,180)}return answer}
 
 
 const yiRu={
