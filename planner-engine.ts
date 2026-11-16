@@ -51,15 +51,17 @@ function localToUtc(day,hour,tz){
 function localTime(instant,tz){return new Intl.DateTimeFormat('ru-RU',{timeZone:tz,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(instant);}
 function moonLongitude(d){return Astro.EclipticGeoMoon(d).lon;}
 function mercuryLongitude(d){return Astro.Ecliptic(Astro.GeoVector('Mercury',d,true)).elon;}
-function moonPhaseName(angle){
-  if(angle<18||angle>=342)return 'Новолуние';
-  if(angle<72)return 'Растущая Луна';
-  if(angle<108)return 'Первая четверть';
-  if(angle<162)return 'Растущая Луна';
-  if(angle<198)return 'Полнолуние';
-  if(angle<252)return 'Убывающая Луна';
-  if(angle<288)return 'Последняя четверть';
-  return 'Убывающая Луна';
+// Label precise quarter phases only near the actual 90°/270° elongation.
+// Previously the app called ~37-42% illuminated Moon "first quarter".
+export function moonPhaseName(angle){
+  if(angle<10||angle>=350)return 'Новолуние';
+  if(angle<82)return 'Растущий серп';
+  if(angle<=98)return 'Первая четверть';
+  if(angle<170)return 'Растущая выпуклая Луна';
+  if(angle<=190)return 'Полнолуние';
+  if(angle<262)return 'Убывающая выпуклая Луна';
+  if(angle<=278)return 'Последняя четверть';
+  return 'Убывающий серп';
 }
 function moonIngress(start,end,tz){
   const first=signIndex(moonLongitude(start)),last=signIndex(moonLongitude(new Date(end.getTime()-1000)));
