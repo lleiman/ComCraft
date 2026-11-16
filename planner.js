@@ -686,10 +686,20 @@ function paintMapConnection(){
  if(psychology?.archive){
   const warning=document.createElement('div');
   warning.className='v8-privacy';
-  warning.innerHTML='<strong>В браузере есть полная копия психологического архива.</strong><p>Для рекомендаций достаточно целей и сводки. Дневники, тесты и документы здесь не нужны. Оригинал остаётся в «Карте сознания».</p><button type="button" data-v8-strip-archive>Удалить полную копию только из планнера</button>';
+  warning.innerHTML='<strong>В браузере есть полная копия психологического архива.</strong><p>Для рекомендаций достаточно целей и сводки. Архив здесь скрыт. Если это единственная доступная копия, удаление приведёт к потере данных: сначала сохраните резервный файл и проверьте его.</p><button type="button" data-v8-download-archive>Скачать копию JSON</button> <button type="button" data-v8-strip-archive>Удалить копию из планнера</button>';
   box.appendChild(warning);
+  warning.querySelector('[data-v8-download-archive]').onclick=()=>{
+   if(!psychology?.archive)return;
+   const json=JSON.stringify(psychology.archive,null,2);
+   const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+   const url=URL.createObjectURL(blob);
+   const link=document.createElement('a');
+   link.href=url;link.download='consciousness-map-recovery-'+todayIso()+'.json';
+   document.body.appendChild(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
   warning.querySelector('[data-v8-strip-archive]').onclick=()=>{
-   if(!window.confirm('Удалить полную копию архива только из браузера планнера? Цели и краткая сводка останутся, исходные данные в Карте сознания не изменятся.'))return;
+   if(!window.confirm('Проверили ли вы, что оригинальная Карта или скачанный бэкап доступны? Если планнер содержит единственную копию архива, удаление может привести к потере данных. Удалить только копию из браузера планнера?'))return;
    const clean={...psychology};delete clean.archive;
    try{
     localStorage.setItem(PSY_KEY,JSON.stringify(clean));
