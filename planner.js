@@ -278,17 +278,19 @@ if(!app){console.error('Missing IYTN bridge');return}
 const legacyCalendar=app.calendar(),legacyPaint=app.paint();
 const MAP_ORIGIN='https://conscious-map-v2-production.up.railway.app';
 const ORIGINAL_MAP_ORIGIN='https://consciousness-map-production-ce66.up.railway.app';
-const PSY_KEY='iytn_psych_snapshot_v1',CHECKIN_KEY='iytn_daily_checkin_v1',LENS_KEY='iytn_planner_lens_v3';
+const PSY_KEY='iytn_psych_snapshot_v1',CHECKIN_KEY='iytn_daily_checkin_v1',LENS_KEY='iytn_planner_lens_v3',FORECAST_KEY='iytn_forecast_horizon_v1';
 const tabs=[['all','Все сферы'],['work','Работа'],['money','Финансы'],['creative','Творчество'],['relationship','Отношения'],['learning','Учёба'],['rest','Восстановление']];
 const levels={good:'Подходит по традиции',neutral:'Без особого акцента',caution:'По традиции осторожнее'};
 const short={good:'Подходит',neutral:'Ровно',caution:'Осторожно'};
 const goalKinds={work:'work',creative:'creative',relationship:'relationship',learning:'learning',health:'rest'};
-let active='all',lens='all',view='month',cache={},loading={},error='';
+let active='all',lens='all',view='month',cache={},loading={},error='',forecastHorizon='day';
 let layersOpen=false, calculationsOpen=false, mapTransferError='';
 let psychology=null,checkins={};
 try{
  active=localStorage.getItem('iytn_planner_category')||'all';
  lens=localStorage.getItem(LENS_KEY)||'all';
+ forecastHorizon=localStorage.getItem(FORECAST_KEY)||'day';
+ if(!['day','week','month'].includes(forecastHorizon))forecastHorizon='day';
  psychology=JSON.parse(localStorage.getItem(PSY_KEY)||'null');
  checkins=JSON.parse(localStorage.getItem(CHECKIN_KEY)||'{}');
  if(!tabs.some(t=>t[0]===active))active='all';
@@ -325,7 +327,7 @@ function calendar(){
  let h=legacyCalendar();
  // Keep legacy calendar and all existing engines intact. Recompose them rather than patching backend rendering.
  h=h.replace(/^<div class="eyebrow">PERSONAL TIME MAP<\/div><h1>Ваш <em>календарь\.<\/em><\/h1><p class="lead">[\s\S]*?<\/p>/,contentHeader());
- h=h.replace('<div class="card"><div class="flex">','<div class="v3-workbench"><section class="v3-left"><div class="card v3-calendar"><div class="flex v3-month-bar">');
+ h=h.replace('<div class="card"><div class="flex">','<section id="v5-forecast" class="v5-forecast" aria-live="polite"><p>Составляем прогноз из календаря и вашей Карты сознания...</p></section><div class="v3-workbench"><section class="v3-left"><div class="card v3-calendar"><div class="flex v3-month-bar">');
  h=h.replace('<div class="calendar-toolbar">','<details id="v3-teaching-layers" class="v3-filter-drawer"'+(layersOpen?' open':'')+'><summary>Нумерология, астрология и другие слои</summary><div class="calendar-toolbar">');
  h=h.replace('<div class="calendar" id="calendar-grid">','</details><div class="v3-mode-row"><div class="v3-view-switch"><button data-v3-view="month" aria-pressed="'+(view==='month')+'">Месяц</button><button data-v3-view="week" aria-pressed="'+(view==='week')+'">Неделя</button></div><button data-v3-today class="v3-today">Сегодня</button></div><div class="v3-legend"><span><i class="astro-dot good"></i>Традиционно подходит</span><span><i class="astro-dot caution"></i>Осторожнее</span><span><i class="v3-psy-marker"></i>Контрольная точка</span></div><div class="calendar" id="calendar-grid">');
  h=h.replace(/<div class="section flex"><h2>Ваш день<\/h2><span>[\s\S]*?<\/span><\/div>/,'');
@@ -629,9 +631,12 @@ function dayPanel(day,model,state){
  let out='<div class="v3-day-hero"><div class="v3-day-hero-top"><div class="v3-kicker">'+esc(datePretty(day.date))+' · '+esc(model.timeZone)+'</div><div class="v3-day-nav"><button type="button" data-v3-shift="-1" aria-label="Предыдущий день">←</button><button type="button" data-v3-shift="1" aria-label="Следующий день">→</button></div></div><div class="v3-hero-caption">'+esc(priority.caption)+'</div><h2>'+esc(priority.title)+'</h2><p>'+esc(priority.why)+'</p></div>';
  if(lens==='all'||lens==='psychology')out+='<section class="v3-source-card v3-psych-card">'+psychPanel(day,state)+'</section>';
  if(lens==='all'||lens==='astrology')out+='<section class="v3-source-card v3-astro-card">'+astroPanel(day,model,state)+'</section>';
- out+=archivePanel(day.date)+teachingsPanel(day);
+ out+='<details class="v5-reference" id="v5-archive-ref"><summary>Психологический архив и исходные записи</summary>'+archivePanel(day.date)+'</details>';
+ out+='<details class="v5-reference" id="v5-teachings-ref"><summary>Все 20 учений · расчёты и подробные объяснения</summary>'+teachingsPanel(day)+'</details>';
  if(lens==='all')out+='<div class="v3-principle">При расхождении рекомендаций дедлайны, наблюдаемые данные и ваше самочувствие имеют приоритет над символическими календарными правилами.</div>';
- const root=document.getElementById('astro-day');if(!root)return;root.innerHTML=out;bindArchive(root);void fillTeachings(day);
+ const root=document.getElementById('astro-day');if(!root)return;root.innerHTML=out;
+ const records=root.querySelector('#v5-archive-ref');if(records)records.ontoggle=()=>{if(records.open)bindArchive(records)};
+ const traditions=root.querySelector('#v5-teachings-ref');if(traditions)traditions.ontoggle=()=>{if(traditions.open)void fillTeachings(day)};
  root.querySelectorAll('[data-v3-shift]').forEach(b=>b.onclick=()=>{
  const d=new Date(day.date+'T12:00:00');d.setDate(d.getDate()+Number(b.dataset.v3Shift));
  const next=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -701,6 +706,7 @@ function paint(){
  paintGrid(model,state);
  const chosen=idx[state.selected]||model.days[0];if(chosen)dayPanel(chosen,model,state);
  highlightMonth(model,state);
+ paintForecast(state);
 }
 function sanitiseSnapshot(value){
  if(!value||value.version!==1||!['conscious-map-v2','conscious-map'].includes(value.source))throw Error('Неподдерживаемый формат');
@@ -709,7 +715,7 @@ function sanitiseSnapshot(value){
  const hypotheses=Array.isArray(value.hypotheses)?value.hypotheses.slice(0,10):[];
  return {version:1,source:value.source,exportedAt:Number(value.exportedAt)||Date.now(),
   ...(value.archive?{archive:validateArchive(value.archive)}:{}),
-  goals:goals.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),readiness:Math.max(0,Math.min(100,Number(x.readiness)||0)),supportCount:Math.max(0,Math.min(999,Number(x.supportCount)||0)),riskCount:Math.max(0,Math.min(999,Number(x.riskCount)||0))})),
+  goals:goals.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),readiness:Math.max(0,Math.min(100,Number(x.readiness)||0)),supportCount:Math.max(0,Math.min(999,Number(x.supportCount)||0)),riskCount:Math.max(0,Math.min(999,Number(x.riskCount)||0)),modelProbability:typeof x.modelProbability==='number'&&Number.isFinite(x.modelProbability)?Math.max(0,Math.min(1,x.modelProbability)):null,nextSteps:Array.isArray(x.nextSteps)?x.nextSteps.slice(0,4).map(q=>truncate(q,220)):[],supportFactors:Array.isArray(x.supportFactors)?x.supportFactors.slice(0,4).map(q=>truncate(q,220)):[],riskFactors:Array.isArray(x.riskFactors)?x.riskFactors.slice(0,4).map(q=>truncate(q,220)):[]})),
   experiments:experiments.map(x=>({id:truncate(x.id,80),action:truncate(x.action,220),due:isValidDate(x.due)?x.due:'',hypothesisId:truncate(x.hypothesisId,80)})),
   hypotheses:hypotheses.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),expectedBy:isValidDate(x.expectedBy)?x.expectedBy:''})),
   stats:{evidenceCount:Math.max(0,Math.min(99999,Number(value.stats?.evidenceCount)||0)),experimentsOpen:Math.max(0,Math.min(99999,Number(value.stats?.experimentsOpen)||0)),hypothesesActive:Math.max(0,Math.min(99999,Number(value.stats?.hypothesesActive)||0)),sphereCounts:Object.fromEntries(['self','shadow','relations','body','meaning','lineage','work'].map(k=>[k,Math.max(0,Math.min(99999,Number(value.stats?.sphereCounts?.[k])||0))]))}};
