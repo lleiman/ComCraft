@@ -1221,75 +1221,8 @@ window.addEventListener('storage', event=>{
  if(event.key!==PSY_KEY)return;
  try{psychology=event.newValue?sanitiseSnapshot(JSON.parse(event.newValue)):null;mapTransferError='';paint()}catch{}
 });
-// An explicit, read-only self-test on ?qa=1: date navigation, Day/Week/Month and API checks.
-// The test never writes personal records and restores view preferences.
-function installPublicQA(){
- if(new URLSearchParams(location.search).get('qa')!=='1')return;
- const report=document.createElement('pre');
- report.id='iytn-qa-report';
- report.style.cssText='position:relative;z-index:10001;white-space:pre-wrap;overflow-wrap:anywhere;background:#111d17;color:#d8f1ca;padding:18px;margin:15px auto;max-width:900px;border:2px solid #aacc9c;font:13px/1.5 monospace;';
- document.body.prepend(report);
- const tests=[],errors=[];
- const add=(name,ok,detail='')=>tests.push({name,ok:!!ok,...(detail?{detail}: {})});
- const stageKey='iytn_qa_stage_v1';
- const nowStage=sessionStorage.getItem(stageKey);
- const checkStore=()=>{const raw=localStorage.getItem(PSY_KEY)||'';let h=0;for(let i=0;i<raw.length;i++)h=((h<<5)-h+raw.charCodeAt(i))|0;return String(raw.length)+'-'+String(h)};
- const update=(complete)=>{const result={complete,passed:tests.filter(x=>x.ok).length,total:tests.length,tests,errors};report.textContent='ПРОВЕРКА ИНТЕРФЕЙСА\n'+JSON.stringify(result,null,2);};
- if(nowStage){
-  try{const prev=JSON.parse(nowStage);sessionStorage.removeItem(stageKey);for(const t of prev.tests)tests.push(t);
-   add('reload_preserves_psychology_archive',prev.store===checkStore());
-   add('reload_keeps_day_view',!!document.querySelector('#v5-forecast'));
-   update(true);
-  }catch(e){errors.push('reload: '+String(e));update(true)}
-  return;
- }
- window.addEventListener('error',e=>errors.push('JS: '+String(e.message||'unknown')));
- (async()=>{
-  try{
-   app.openCalendar();
-   for(let i=0;i<25&&!document.querySelector('#v5-forecast .v7-story');i++)await new Promise(r=>setTimeout(r,320));
-   const initial=app.state().selected;
-   add('day_story_visible',!!document.querySelector('#v5-forecast .v7-story'));
-   add('six_life_domains_visible',document.querySelectorAll('#v5-forecast .v7-domain').length===6);
-   add('day_has_symbolic_interpretations',!!document.querySelector('#v5-forecast .v9-meanings'));
-   add('russian_huangli_visible',!!document.querySelector('#v5-forecast .v7-almanac'));
-   add('no_raw_chinese_in_first_huangli',!/[㐀-鿿]/.test(document.querySelector('#v5-forecast .v7-almanac')?.textContent||''));
-   add('time_zone_control',!!document.querySelector('#v5-forecast [data-v9-zone]'));
-   for(let i=0;i<24&&!Array.from(document.querySelectorAll('#v5-forecast .v7-system')).some(x=>/тибетский календарь/i.test(x.textContent));i++)await new Promise(r=>setTimeout(r,220));
-   add('tibetan_phenomena',Array.from(document.querySelectorAll('#v5-forecast .v7-system')).some(x=>/тибетский календарь/i.test(x.textContent)));
-   add('unknown_personal_scores_not_fabricated',!(/Оценка языковой модели: 50%/.test(document.querySelector('#v5-forecast .v7-personal')?.textContent||'')));
-   const nxt=document.querySelector('#v5-forecast [data-v7-shift="1"]');
-   if(nxt)nxt.click();
-   add('next_date_changes_selected',app.state().selected===forecastShift(initial,1));
-   app.selectDate(initial);
-   for(let i=0;i<20&&!document.querySelector('#v5-forecast .v7-story');i++)await new Promise(r=>setTimeout(r,160));
-   for(const h of ['week','month','day']){
-    const control=document.querySelector('#v5-forecast [data-v5-horizon="'+h+'"]');
-    if(control)control.click();
-    await new Promise(r=>setTimeout(r,170));
-    add('horizon_'+h,forecastHorizon===h,'button='+!!control+' active='+forecastHorizon+' heading='+(document.querySelector('#v5-forecast h2')?.textContent||''));
-   }
-   try{
-    const r=await fetch('/api/self-test',{cache:'no-store'}),v=await r.json();
-    add('api_self_test',r.ok&&v.ok,'tests='+((v.tests||[]).length));
-    if(v.tests)for(const t of v.tests)if(!t.ok)errors.push('api: '+t.name+(t.error?' '+t.error:''));
-   }catch(e){add('api_self_test',false);errors.push('api: '+String(e))}
-   try{
-    const r=await fetch('/api/day-systems?date=2026-11-16&time=12:00',{cache:'no-store'}),v=await r.json();
-    add('tibetan_activity_2026_11_16',r.ok&&v.tibetan?.electional?.indications?.some(x=>x.polarity==='traditionally_avoided'));
-    add('qimen_data_2026_11_16',!!v.qimen?.chiefDoor);
-   }catch(e){errors.push('day-systems: '+String(e))}
-   app.selectDate(initial);
-   const before=checkStore();
-   sessionStorage.setItem(stageKey,JSON.stringify({tests,store:before}));
-   update(false);
-   location.reload();
-  }catch(e){errors.push('test runner: '+String(e.stack||e));update(true)}
- })();
-}
 
 app.setCalendar(calendar);
 app.setPaint(function(){legacyPaint();paint()});
 if(window.IYTN_GOOGLE_CALENDAR.landing())app.openCalendar();else app.render();
-installPublicQA();
 })();
