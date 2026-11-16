@@ -313,7 +313,12 @@ function psychDueStatus(date){
  return '';
 }
 function status(day){const c=active==='all'?null:day.categories.find(v=>v.id===active);return c?.level||day.overall}
-function todayIso(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function todayIso(){
+ const zone=app.state().timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+ try{const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+ return p.year+'-'+p.month+'-'+p.day;}
+ catch{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+}
 function datePretty(date){return new Date(date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'long'})}
 function dayDiff(from,to){const a=Date.parse(from+'T12:00:00'),b=Date.parse(to+'T12:00:00');return Math.round((b-a)/86400000)}
 function contentHeader(){
@@ -960,6 +965,10 @@ function dayReadingView(state,day,goals,tasks){
  let out='<div class="v7-head"><div><div class="v7-eyebrow">'+esc(state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC')+' · ДНЕВНАЯ КАРТИНА</div><h2>'+esc(headerTitle)+'</h2><p>Что происходит по используемым календарным системам, как это трактуется и какие действия можно из этого извлечь.</p></div><div class="v5-horizons" role="group" aria-label="Период">';
  for(const [id,label] of [['day','День'],['week','Неделя'],['month','Месяц']])out+='<button type="button" data-v5-horizon="'+id+'" aria-pressed="'+String(forecastHorizon===id)+'">'+label+'</button>';
  out+='</div></div>';
+ const zone=state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+ const zones=[['Asia/Makassar','Бали, Макассар · UTC+8'],['Asia/Jakarta','Джакарта · UTC+7'],['Asia/Tashkent','Ташкент · UTC+5'],['Europe/Moscow','Москва · UTC+3'],['Asia/Manila','Манила · UTC+8'],['Asia/Dubai','Дубай · UTC+4'],['Europe/London','Лондон'],['America/New_York','Нью-Йорк'],['UTC','UTC']];
+ if(!zones.some(x=>x[0]===zone))zones.unshift([zone,zone+' · устройство/профиль']);
+ out+='<label class="v9-timezone">Часовой пояс всех расчётов: <select data-v9-zone aria-label="Часовой пояс расчётов">'+zones.map(x=>'<option value="'+esc(x[0])+'"'+(zone===x[0]?' selected':'')+'>'+esc(x[1])+'</option>').join('')+'</select></label>';
  out+='<div class="v7-top-nav"><button type="button" data-v7-shift="-1">← Вчера</button><button type="button" data-v7-today>Сегодня</button><button type="button" data-v7-shift="1">Завтра →</button></div>';
  if(!d){
   out+='<div class="v7-loading"><b>Календарные расчёты ещё загружаются.</b><p>Дата: '+esc(dayName)+'. Если расчёты недоступны, не буду подменять их общими прогнозами.</p></div>';
@@ -1006,6 +1015,10 @@ function dayReadingView(state,day,goals,tasks){
   root.querySelectorAll('[data-v5-horizon]').forEach(b=>b.onclick=()=>{forecastHorizon=b.dataset.v5Horizon;try{localStorage.setItem(FORECAST_KEY,forecastHorizon)}catch{}paintForecast(st())});
   root.querySelectorAll('[data-v7-shift]').forEach(b=>b.onclick=()=>app.selectDate(forecastShift(date,Number(b.dataset.v7Shift))));
   root.querySelectorAll('[data-v7-today]').forEach(b=>b.onclick=()=>app.selectToday());
+  const timezoneSelect=root.querySelector('[data-v9-zone]');
+  if(timezoneSelect)timezoneSelect.onchange=()=>{
+   if(!app.setTimeZone(timezoneSelect.value)){timezoneSelect.value=state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone;window.alert('Неверный часовой пояс');}
+  };
  }
 }
 
