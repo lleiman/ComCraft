@@ -565,9 +565,34 @@ function explainTeaching(t,day,extra={},natal){
  }
  return result;
 }
+function teachingOrigin(id){
+ const known={
+  western:'NatalEngine + astronomy-engine · детерминированный натальный расчёт',
+  vedic:'NatalEngine · ведические циклы по времени рождения',
+  human:'NatalEngine · правила Human Design (не психометрический тест)',
+  genekeys:'NatalEngine · правила Gene Keys (не психометрический тест)',
+  hellenistic:'Самописные правила профекций на основе натальной схемы',
+  huangli:'lunar-javascript · китайский альманах по дате',
+  bazi:'lunar-javascript · календарные стволы и ветви',
+  qimen:'Самописные правила Ци Мэнь Дунь Цзя',
+  tibetan:'Самописная модель календаря Пхугпа',
+  lunar:'astronomy-engine · фазы и положения Луны',
+  solar:'astronomy-engine · положения Солнца',
+  wuxing:'Символическая классификация пяти элементов по календарным данным',
+  numerology:'Авторская нумерологическая формула',
+  chaldean:'Авторская таблица соответствий букв и чисел',
+  tzolkin:'Авторский календарный расчёт Цолькин',
+  meridian:'Справочная таблица меридианных часов',
+  circadian:'Справочные сведения о циркадных ритмах, без индивидуального прогноза',
+  ultradian:'Справочные сведения о циклах работы и отдыха',
+  iching:'Ручной выбор гексаграммы по вопросу',
+  tarot:'Случайная карта по запросу пользователя'
+ };
+ return (known[id]||'Правило приложения')+'. Текст рекомендации написан заранее, языковая модель здесь не вызывается.';
+}
 function teachingCard(t,day,extra,natal){
  const e=explainTeaching(t,day,extra,natal),ref=teachingReferences[t.id];
- return '<div class="v3-kicker">'+esc(e.scope)+'</div><h4>'+esc(t.icon+' '+t.name)+'</h4><div class="v3-kicker" style="margin-top:12px">РЕЗУЛЬТАТ</div><strong style="display:block;font-size:19px;line-height:1.5">'+esc(e.headline)+'</strong><p style="margin-top:16px"><b>Что это значит</b><br>'+esc(e.meaning)+'</p><p><b>Как использовать</b><br>'+esc(e.practice)+'</p><details><summary>Расчёт и ограничения</summary><p>'+esc(e.detail)+'</p>'+(e.raw?'<p class="v3-small" style="overflow-wrap:anywhere">Исходный результат: '+esc(e.raw)+'</p>':'')+(ref?'<a href="'+ref[1]+'" target="_blank" rel="noopener noreferrer">'+esc(ref[0])+' ↗</a>':'')+'</details><button type="button" class="secondary" style="margin-top:14px" data-v4-teaching="'+esc(t.id)+'">Подробнее об учении</button>';
+ return '<div class="v3-kicker">'+esc(e.scope)+'</div><h4>'+esc(t.icon+' '+t.name)+'</h4><p class="v6-engine-label">Источник: '+esc(teachingOrigin(t.id))+'</p><div class="v3-kicker" style="margin-top:12px">РЕЗУЛЬТАТ</div><strong style="display:block;font-size:19px;line-height:1.5">'+esc(e.headline)+'</strong><p style="margin-top:16px"><b>Что это значит</b><br>'+esc(e.meaning)+'</p><p><b>Как использовать</b><br>'+esc(e.practice)+'</p><details><summary>Расчёт и ограничения</summary><p>'+esc(e.detail)+'</p>'+(e.raw?'<p class="v3-small" style="overflow-wrap:anywhere">Исходный результат: '+esc(e.raw)+'</p>':'')+(ref?'<a href="'+ref[1]+'" target="_blank" rel="noopener noreferrer">'+esc(ref[0])+' ↗</a>':'')+'</details><button type="button" class="secondary" style="margin-top:14px" data-v4-teaching="'+esc(t.id)+'">Подробнее об учении</button>';
 }
 
 const archiveLabels={completedTests:'Тесты',journal:'Дневник',chatHistory:'История диалогов',hypotheses:'Жизненные гипотезы',researchHypotheses:'Проверяемые гипотезы',researchExperiments:'Проверки',lifeEvents:'События жизни',yearNotes:'Заметки по годам',people:'Люди',userDocuments:'Документы и разметка',sources:'Первичные источники',liveTestRuns:'Live Test',personalResearchProfile:'Исследовательский профиль',goals:'Цели',intentions:'Намерения',formulations:'Формулировки',cellNotes:'Заметки карты',pinnedPrograms:'Закреплённые программы',customPrograms:'Свои программы',hypothesisChecks:'Проверки гипотез',hypothesisEvents:'События гипотез',summaries:'Сводки',humanosStageStatus:'HumanOS: статусы',humanosBlockChecks:'HumanOS: блоки',humanosStageChecks:'HumanOS: этапы',balanceWheels:'Колёса баланса',resemblanceRuns:'Сходства',birthDate:'Дата рождения',lifeHorizonYears:'Горизонт жизни',activeLens:'Линза карты',mode:'Режим',onboarded:'Настройка пройдена',version:'Версия',exportedAt:'Дата снимка',lastSelfCheckTs:'Последняя сверка'};
@@ -840,7 +865,7 @@ function paintForecast(state){
  let out='<div class="v6-head"><div><div class="v6-eyebrow">ПЛАН ДЕЙСТВИЙ · '+esc(forecastTimeLabel(start,end))+'</div><h2>'+horizonTitle+' · что делать</h2><p>Совет из ваших задач и наблюдений. Традиционные расчёты приведены отдельно.</p></div><div class="v5-horizons" role="group" aria-label="Период">';
  for(const [key,label] of [['day','День'],['week','Неделя'],['month','Месяц']])out+='<button type="button" data-v5-horizon="'+key+'" aria-pressed="'+String(forecastHorizon===key)+'">'+label+'</button>';
  out+='</div></div>';
- out+='<section class="v6-main"><div class="v6-eyebrow">'+esc(sourceLabel)+'</div><h3>'+esc(recommendation)+'</h3><div class="v6-action"><span>Что сделать</span><strong>'+esc(action)+'</strong></div><p class="v6-reason"><b>Почему:</b> '+esc(reason)+'</p><p class="v6-warning">'+esc(guard)+'</p></section>';
+ out+='<section class="v6-main"><div class="v6-eyebrow">'+esc(sourceLabel)+'</div><h3>'+esc(recommendation)+'</h3><div class="v6-action"><span>Что сделать</span><strong>'+esc(action)+'</strong></div><p class="v6-reason"><b>Почему:</b> '+esc(reason)+'</p><p class="v6-warning">'+esc(guard)+'</p><button type="button" class="v6-state-button" data-v6-checkin>Отметить своё состояние ↗</button></section>';
  out+='<div class="v6-section"><div class="v6-section-heading"><h3>01 · Ваши задачи и сроки</h3><span>'+tasks.length+' на период</span></div>';
  if(tasks.length)out+='<div class="v6-tasks">'+tasks.slice(0,4).map((t,i)=>'<button type="button" class="v6-task" data-v6-date="'+esc(t.date)+'"><small>'+esc(t.date)+' · '+esc(t.kind)+'</small><b>'+esc(t.text)+'</b><span>К дате ↗</span></button>').join('')+'</div>';
  else out+='<p class="v6-empty">Дел с установленным сроком не обнаружено. Добавьте дату в цели или назначьте эксперимент в Карте.</p>';
@@ -900,6 +925,9 @@ function paintForecast(state){
  '</details>';
  root.innerHTML=out;
  root.querySelectorAll('[data-v5-horizon]').forEach(b=>b.onclick=()=>{forecastHorizon=b.dataset.v5Horizon;try{localStorage.setItem(FORECAST_KEY,forecastHorizon)}catch{}paintForecast(st())});
+ const checkButton=root.querySelector('[data-v6-checkin]');if(checkButton)checkButton.onclick=()=>{
+  const drawer=document.getElementById('v6-day-analysis');if(drawer){drawer.open=true;drawer.scrollIntoView({behavior:'smooth',block:'start'});}
+ };
  root.querySelectorAll('[data-v5-date],[data-v6-date]').forEach(b=>b.onclick=()=>{
   forecastHorizon='day';try{localStorage.setItem(FORECAST_KEY,'day')}catch{}
   app.selectDate(b.dataset.v5Date||b.dataset.v6Date);
