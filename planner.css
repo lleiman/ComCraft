@@ -341,3 +341,92 @@
 .v6-day-navigation button:hover{background:#35543c}
 @media(max-width:900px){.v6-head{flex-direction:column;gap:14px}.v6-goals,.v6-tasks{grid-template-columns:1fr 1fr}}
 @media(max-width:640px){.v5-forecast{padding:17px 14px!important}.v6-main{padding:18px 0}.v6-action{grid-template-columns:1fr;gap:6px}.v6-goals,.v6-tasks{grid-template-columns:1fr}.v6-connect{flex-direction:column;align-items:stretch}.v6-connect a{justify-content:center}.v6-trad>summary small{display:block;margin:3px 0 0}.v6-source-row{grid-template-columns:1fr;gap:5px}.v6-section-heading{align-items:flex-start}.v6-head .v5-horizons{width:100%}.v6-head .v5-horizons button{flex:1}}
+
+
+/* v7: read the date first. Deliberately separate facts, traditions, actionable tasks and private psychology. */
+.v7-head{display:flex;align-items:flex-start;justify-content:space-between;gap:26px;padding-bottom:20px;border-bottom:1px solid #456049}
+.v7-head h2{font:750 clamp(24px,2.7vw,36px)/1.2 Manrope,sans-serif;letter-spacing:-.04em;margin:9px 0 10px;color:#f0f5eb}
+.v7-head p{font-size:13px;line-height:1.65;color:#b9cbb9;margin:0;max-width:850px}
+.v7-eyebrow{font-size:10px;letter-spacing:.15em;line-height:1.5;font-weight:750;color:#c1dfa7;text-transform:uppercase}
+.v7-top-nav{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin:12px 0 15px}
+.v7-top-nav button{border:1px solid #526d52;background:#294230;color:#d7e7ce;padding:8px 12px;border-radius:9px;font-size:11px;cursor:pointer}
+.v7-top-nav button:hover{background:#345239}
+.v7-top-nav button:nth-child(2){background:#d2e7ae;color:#273a2c;border-color:#d2e7ae;font-weight:750}
+.v7-story{background:linear-gradient(145deg,#35553a,#263d2b);border:1px solid #5d7c5b;border-radius:18px;padding:clamp(17px,2.2vw,27px);margin-bottom:12px}
+.v7-story h3{font:750 clamp(21px,2.3vw,29px)/1.25 Manrope,sans-serif;letter-spacing:-.035em;margin:9px 0 16px;color:#f2f6ed}
+.v7-story p{color:#dce8d8;line-height:1.72;font-size:13px;margin:0 0 13px;max-width:1050px}
+.v7-story p:last-of-type{margin-bottom:0}
+.v7-events{border-top:1px solid #668169;margin-top:16px;padding-top:13px;font-size:12px;line-height:1.6;color:#d2decf}
+.v7-decide{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;background:#203727;border:1px solid #4e6b51;border-radius:15px;padding:21px 23px;margin-bottom:14px}
+.v7-decide h3{font:700 clamp(16px,1.75vw,22px)/1.37 Manrope,sans-serif;margin:9px 0;max-width:750px;overflow-wrap:anywhere}
+.v7-decide p{color:#bdd2ba;font-size:12px;line-height:1.7;max-width:950px;margin:6px 0 0}
+.v7-source-tag{white-space:nowrap;color:#cfe2bf;border:1px solid #526f51;border-radius:30px;padding:8px 13px;font-size:10px;max-width:320px;white-space:normal;line-height:1.5}
+.v7-sections,.v7-section-block,.v7-almanac,.v7-personal{padding:24px 0;border-top:1px solid #405b45}
+.v7-section-title{margin:0 0 18px}
+.v7-section-title h3{font:700 clamp(18px,2vw,24px)/1.32 Manrope,sans-serif;letter-spacing:-.025em;color:#e9f2e4;margin:0 0 7px}
+.v7-section-title p{color:#b7ccb4;font-size:12px;line-height:1.7;max-width:1000px;margin:0}
+.v7-domains,.v7-systems{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.v7-domain{background:#213b29;border:1px solid #47644a;border-radius:13px;padding:20px;min-width:0}
+.v7-domain-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:13px}
+.v7-domain h3{font:700 15px/1.48 Manrope,sans-serif;color:#eaf2e6;margin:0}
+.v7-tag{display:inline-block;color:#c9d7c2;font:600 10px/1.45 Manrope,sans-serif;max-width:135px;text-align:right;flex-shrink:0}
+.v7-tag.good{color:#d9eea4}.v7-tag.caution{color:#e3c6a1}
+.v7-domain p{font-size:12px;line-height:1.7;margin:8px 0;overflow-wrap:anywhere}
+.v7-domain .v7-action{color:#e4efe0}.v7-domain .v7-caution{color:#bbd0bb}
+.v7-domain b{color:#e8f3dc}
+.v7-why{border-top:1px solid #456049;margin-top:16px;padding-top:11px}
+.v7-why summary{font-size:11px;color:#d2e5bc;cursor:pointer}
+.v7-why p{color:#b5c9b1;font-size:11px}
+.v7-why small{font-size:10px;color:#9fae9d;line-height:1.5}
+.v7-almanac-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.v7-almanac-grid>div{background:#223729;padding:18px;border-radius:13px;border:1px solid #49624b}
+.v7-almanac-grid>div span{display:block;color:#bbd4a8;font-size:11px;font-weight:700;margin-bottom:9px}
+.v7-almanac-grid>div p{margin:0;color:#e0eade;font-size:13px;line-height:1.8;overflow-wrap:anywhere}
+.v7-system{background:#1c3526;border:1px solid #476047;border-radius:13px;padding:20px;min-width:0;display:flex;flex-direction:column;gap:11px}
+.v7-system-title{display:flex;flex-wrap:wrap;gap:5px 12px;align-items:baseline;justify-content:space-between}
+.v7-system-title h4{font:720 16px/1.42 Manrope,sans-serif;margin:0;color:#e7efdd}
+.v7-system-title>span{color:#a7c4a4;font-size:10px}
+.v7-system>strong{display:block;font:700 17px/1.42 Manrope,sans-serif;letter-spacing:-.025em;color:#e7f3dc;margin:2px 0}
+.v7-system>p{font-size:12px;line-height:1.7;color:#c8d9c2;margin:0;overflow-wrap:anywhere}
+.v7-system>p>b{color:#e6f0e0}
+.v7-system>details{margin-top:auto;border-top:1px solid #435b45;padding-top:10px}
+.v7-system>details summary,.v7-more>summary{color:#cbdcbc;font-size:11px;cursor:pointer}
+.v7-system>details p{font-size:11px;color:#b6c8b2;line-height:1.68}
+.v7-muted{font-size:11px!important;color:#b3c6af!important;line-height:1.7!important}
+.v7-more{border:1px solid #425a44;border-radius:13px;padding:17px;margin:14px 0;background:#1d3224}
+.v7-more>summary{font-size:13px!important;font-weight:700}
+.v7-more>.v7-systems{margin-top:14px}
+.v7-more>p{font-size:12px;line-height:1.7;color:#c6d6bd}
+.v7-personal-tasks,.v7-goals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.v7-personal-tasks>div,.v7-goal{display:flex;flex-direction:column;gap:6px;background:#20382a;border:1px solid #456049;border-radius:12px;padding:17px}
+.v7-personal-tasks span,.v7-goal span{font-size:10px;color:#b7d09f}
+.v7-personal-tasks b,.v7-goal b{color:#eaf2df;font-size:13px;line-height:1.55}
+.v7-goal p{font-size:12px;color:#c5d8bf;line-height:1.6;margin:2px 0}
+.v7-link{display:inline-block;font-size:12px;color:#d9eabf;border:1px solid #6c8b63;border-radius:10px;padding:11px 14px;text-decoration:none;margin-top:8px}
+.v7-method{padding:17px 0;margin-top:12px;border-top:1px solid #435b47}
+.v7-method summary{font-size:12px;color:#cbe2bf;font-weight:650;cursor:pointer}
+.v7-method p{font-size:12px;color:#bfcfbc;line-height:1.7}
+.v7-loading{background:#223b2a;border:1px solid #526b4f;border-radius:12px;padding:20px}
+.v7-loading p{font-size:12px;line-height:1.6}
+.v7-map-mini{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.v7-map-mini b{font-size:13px}.v7-map-mini span{color:#adbea9;font-size:11px;flex:1}.v7-map-mini a{font-size:11px;color:#d3e4bc}
+.v7-psych-tasks{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:13px 0}
+.v7-psych-tasks>div{border:1px solid #4b644c;border-radius:12px;padding:15px;background:#263e2d}
+.v7-psych-tasks strong{font-size:13px}.v7-psych-tasks p{font-size:12px;line-height:1.6;color:#d2dfcd}
+.v7-psych-tasks small{font-size:10px;color:#b3c7ac;line-height:1.6}
+.v7-checkin{border-top:1px solid #456149;padding-top:12px;margin:20px 0}
+.v7-checkin summary{font-size:12px;color:#d5e7c4;cursor:pointer}
+.v7-checkin>p{font-size:11px;color:#b4c8b2}
+.v7-checkin label{display:grid;grid-template-columns:85px 35px minmax(0,1fr);gap:13px;margin:10px 0;align-items:center;font-size:12px}
+.v7-checkin label span{color:#dbeebc}
+.v7-checkin input{width:100%;accent-color:#c1dda5}
+.v7-checkin button{border:1px solid #6c8965;padding:9px 13px;border-radius:9px;background:#2b4a33;color:#e7f2d8;font-size:12px}
+@media(max-width:1020px){.v7-head{flex-direction:column;gap:14px}}
+@media(max-width:760px){
+.v7-head .v5-horizons{width:100%}.v7-head .v5-horizons button{flex:1}
+.v7-story,.v7-decide{padding:18px 16px}.v7-decide{display:block}.v7-source-tag{display:inline-flex;margin-top:13px}
+.v7-domains,.v7-systems,.v7-almanac-grid,.v7-personal-tasks,.v7-goals,.v7-psych-tasks{grid-template-columns:1fr}
+.v7-domain,.v7-system{padding:16px}.v7-domain-top{gap:10px}
+.v7-top-nav{justify-content:space-between}
+.v7-more{padding:12px}
+}
