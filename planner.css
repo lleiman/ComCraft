@@ -430,3 +430,10 @@
 .v7-top-nav{justify-content:space-between}
 .v7-more{padding:12px}
 }
+
+/* v8: privacy management is compact, never list raw clinical/journal fields in the planner. */
+.v8-privacy{margin-top:11px;border-top:1px solid #516b53;padding:14px 0 2px}
+.v8-privacy strong{display:block;font-size:12px;line-height:1.5;color:#e3efdc}
+.v8-privacy p{font-size:11px;line-height:1.6;margin:7px 0 10px;color:#bbd0b4}
+.v8-privacy button{border:1px solid #9bb48e;background:#2f4934;color:#e5f0de;border-radius:10px;padding:9px 12px;font-size:11px;font-weight:700;cursor:pointer}
+.v8-privacy button:hover{background:#3a5940}
