@@ -686,7 +686,7 @@ function paintMapConnection(){
  if(psychology?.archive){
   const warning=document.createElement('div');
   warning.className='v8-privacy';
-  warning.innerHTML='<strong>В браузере есть полная копия психологического архива.</strong><p>Для рекомендаций достаточно целей и сводки. Архив здесь скрыт. Если это единственная доступная копия, удаление приведёт к потере данных: сначала сохраните резервный файл и проверьте его.</p><button type="button" data-v8-download-archive>Скачать копию JSON</button> <button type="button" data-v8-strip-archive>Удалить копию из планнера</button>';
+  warning.innerHTML='<strong>В браузере есть полная копия психологического архива.</strong><p>Для рекомендаций достаточно целей и сводки. Архив здесь скрыт. Если это единственная доступная копия, удаление приведёт к потере данных: сначала сохраните резервный файл и проверьте его. JSON не зашифрован: храните его приватно.</p><button type="button" data-v8-download-archive>Скачать копию JSON</button> <button type="button" data-v8-strip-archive>Удалить копию из планнера</button>';
   box.appendChild(warning);
   warning.querySelector('[data-v8-download-archive]').onclick=()=>{
    if(!psychology?.archive)return;
