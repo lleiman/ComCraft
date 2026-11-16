@@ -474,6 +474,59 @@ function astroPanel(day,model,state){
  out+='<p class="v3-source-note">Методы: Astronomy Engine, lunar-javascript / Хуанли. Традиция обозначена отдельно от психологических наблюдений.</p>';
  return out;
 }
+const archiveLabels={completedTests:'Тесты',journal:'Дневник',chatHistory:'История диалогов',hypotheses:'Жизненные гипотезы',researchHypotheses:'Проверяемые гипотезы',researchExperiments:'Проверки',lifeEvents:'События жизни',yearNotes:'Заметки по годам',people:'Люди',userDocuments:'Документы и разметка',sources:'Первичные источники',liveTestRuns:'Live Test',personalResearchProfile:'Исследовательский профиль',goals:'Цели',intentions:'Намерения',formulations:'Формулировки',cellNotes:'Заметки карты',pinnedPrograms:'Закреплённые программы',customPrograms:'Свои программы',hypothesisChecks:'Проверки гипотез',hypothesisEvents:'События гипотез',summaries:'Сводки',humanosStageStatus:'HumanOS: статусы',humanosBlockChecks:'HumanOS: блоки',humanosStageChecks:'HumanOS: этапы',balanceWheels:'Колёса баланса',resemblanceRuns:'Сходства',birthDate:'Дата рождения',lifeHorizonYears:'Горизонт жизни',activeLens:'Линза карты',mode:'Режим',onboarded:'Настройка пройдена',version:'Версия',exportedAt:'Дата снимка',lastSelfCheckTs:'Последняя сверка'};
+const fieldLabels={...archiveLabels,text:'Текст',title:'Название',claim:'Предположение',basis:'Основание',confidence:'Уверенность',status:'Статус',sphere:'Сфера',spheres:'Сферы',tags:'Метки',date:'Дата',ts:'Создано',takenAt:'Пройден',responses:'Ответы',result:'Результат',content:'Содержание',kind:'Тип',filename:'Файл',markers:'Разметка',derived:'Производные данные',name:'Имя',role:'Роль',year:'Год',method:'Метод',due:'Срок',meaning:'Смысл',description:'Описание',score:'Значение',traits:'Черты',generatedFrom:'Источник формирования'};
+function archiveSize(v){return Array.isArray(v)?v.length:v&&typeof v==='object'?Object.keys(v).length:v==null||v===''?0:1}
+function validateArchive(v){
+ if(!v||typeof v!=='object'||Array.isArray(v)||!Array.isArray(v.completedTests)||!Array.isArray(v.journal)||!Array.isArray(v.lifeEvents))throw Error('Неверный формат полной Карты');
+ const text=JSON.stringify(v);if(text.length>8_000_000)throw Error('Полная Карта превышает 8 МБ');
+ return JSON.parse(text);
+}
+function renderRecord(value,depth=0){
+ if(value==null)return '<span class="v3-small">—</span>';
+ if(typeof value!=='object')return '<div style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(typeof value==='boolean'?(value?'Да':'Нет'):value)+'</div>';
+ if(depth>12)return '<pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(value,null,2))+'</pre>';
+ return Object.entries(value).map(([k,v])=>'<div class="v3-real-task"><span>'+esc(Array.isArray(value)?Number(k)+1:fieldLabels[k]||k)+'</span>'+renderRecord(v,depth+1)+'</div>').join('');
+}
+function archivePanel(day){
+ const a=psychology?.archive;
+ if(!a)return '<section class="v3-source-card"><h3>Полная психологическая карта</h3><p>Пока получена только сводка. В основной Карте нажмите «Передать всю Карту в планнер».</p></section>';
+ const zone=st().timezone||Intl.DateTimeFormat().resolvedOptions().timeZone;
+ const dated=[];
+ for(const k of ['journal','lifeEvents','completedTests','researchExperiments'])for(const row of a[k]||[]){
+  let date=row.date||row.due;
+  if(!date&&k!=='lifeEvents'&&(row.takenAt||row.ts)){
+   const d=new Date(row.takenAt||row.ts);
+   if(Number.isFinite(d.getTime())){const parts=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);date=['year','month','day'].map(k=>parts.find(p=>p.type===k).value).join('-');}
+  }
+  if(date===day)dated.push({kind:archiveLabels[k],row});
+ }
+ let out='<section class="v3-source-card" id="v4-map-archive"><div class="v3-kicker">ПОЛНАЯ КАРТА · СОХРАНЕНА В ЭТОМ БРАУЗЕРЕ</div><h3>Психологическая карта · все данные</h3><p class="v3-small">Дневники, результаты, исходные тексты и разметка доступны ниже. Записи сохраняют свои даты; гипотезы остаются предположениями. Эта копия не отправляется в Google Календарь.</p>';
+ out+='<p>'+['completedTests','journal','lifeEvents','hypotheses','userDocuments','sources','people'].map(k=>archiveLabels[k]+': '+archiveSize(a[k])).join(' · ')+'</p>';
+ out+='<h4>Записи на '+esc(datePretty(day))+'</h4>'+(dated.length?dated.map(x=>'<details><summary>'+esc(x.kind+' · '+(x.row.title||x.row.testId||x.row.method||'Запись'))+'</summary>'+renderRecord(x.row)+'</details>').join(''):'<p class="v3-small">Записей с этой точной датой нет. Весь архив остаётся доступен ниже.</p>');
+ out+='<h4>Весь архив · '+Object.keys(a).length+' разделов</h4>'+Object.entries(a).map(([k,v])=>'<details class="v3-secondary-details" data-v4-archive="'+esc(k)+'"><summary>'+esc(archiveLabels[k]||k)+' · '+archiveSize(v)+'</summary><div data-v4-content></div></details>').join('')+'</section>';
+ return out;
+}
+function bindArchive(root){root.querySelectorAll('[data-v4-archive]').forEach(el=>el.ontoggle=()=>{if(el.open&&!el.dataset.loaded){el.querySelector('[data-v4-content]').innerHTML=renderRecord(psychology.archive[el.dataset.v4Archive]);el.dataset.loaded='1'}})}
+const extraDays=new Map();let personalPromise;
+function teachingsPanel(day){
+ const all=app.teachingsForDate?.(day.date)||[];
+ return '<section class="v3-source-card" id="v4-teachings" data-date="'+esc(day.date)+'"><div class="v3-kicker">'+esc(datePretty(day.date))+' · ВСЕ УЧЕНИЯ</div><h3>Все учения для выбранной даты · '+all.length+'</h3><p class="v3-small">Дневные циклы относятся к выбранной дате. Натальные схемы постоянны. Для часовых систем используется 12:00; недоступные расчёты обозначены в карточке.</p>'+all.map(t=>{
+  if(t.id==='lunar')t.period=day.moon.sign+' · '+day.moon.phase+' · '+day.moon.illumination+'%';
+  if(t.id==='solar')t.period='Солнце: '+day.sun.sign;
+  return '<article class="v3-suggestion" style="margin-top:18px"><div class="v3-kicker">'+esc(t.group)+'</div><h4>'+esc(t.icon+' '+t.name)+'</h4><strong data-v4-period="'+esc(t.id)+'">'+esc(t.period)+'</strong><p>'+esc(t.meaning)+'</p><p>'+esc(t.action)+'</p><p class="v3-small">'+esc(t.source)+'</p><button type="button" class="secondary" data-v4-teaching="'+esc(t.id)+'">Подробнее об учении</button></article>';
+ }).join('')+'</section>';
+}
+async function fillTeachings(day){
+ const root=document.getElementById('v4-teachings');if(!root)return;
+ root.querySelectorAll('[data-v4-teaching]').forEach(b=>b.onclick=()=>app.openTeaching(b.dataset.v4Teaching));
+ const set=(id,text)=>{if(root.isConnected&&root.dataset.date===day){const el=root.querySelector('[data-v4-period="'+id+'"]');if(el)el.textContent=text}};
+ if(!extraDays.has(day))extraDays.set(day,fetch('/api/day-systems?date='+encodeURIComponent(day)+'&time=12:00').then(async r=>{if(!r.ok)throw Error('Ошибка расчёта');return r.json()}).catch(err=>{extraDays.delete(day);throw err}));
+ const extra=async()=>{try{const j=await extraDays.get(day);if(j.qimen){const q=j.qimen;set('qimen','На 12:00 · '+q.solarTerm+' · '+q.polarity+' '+q.ju+'局 · врата '+q.chiefDoor+' · звезда '+q.chiefStar)}else set('qimen','Расчёт недоступен');if(j.tibetan){const t=j.tibetan;set('tibetan','Phugpa · цикл '+t.cycle+' · год '+t.year+' · месяц '+t.month+' · день '+t.day+(t.leapMonth?' · дополнительный месяц':'')+(t.leapDay?' · повторный день':''))}else set('tibetan','Расчёт недоступен')}catch{set('qimen','Не удалось загрузить расчёт');set('tibetan','Не удалось загрузить расчёт')}};
+ const natal=async()=>{try{personalPromise||=(app.personalTeachings?.()||Promise.resolve(null)).catch(e=>{personalPromise=null;throw e});const j=await personalPromise;for(const id of ['western','vedic','human','genekeys']){if(!j){set(id,'Для полной натальной схемы заполните время и место рождения в профиле.');continue}const text=id==='vedic'&&j.vedic?'Натальная накшатра: '+j.vedic.nakshatra+' · пада '+j.vedic.pada+' · даша выбранной даты не рассчитана':app.personalResult(id,j);set(id,text||'Персональный расчёт недоступен')}}catch{for(const id of ['western','vedic','human','genekeys'])set(id,'Не удалось загрузить персональную схему')}};
+ await Promise.allSettled([extra(),natal()]);
+}
+
 function dayPanel(day,model,state){
  const due=psychEvents(day.date);
  const next=findNextGoal(day.date,state);
@@ -482,8 +535,9 @@ function dayPanel(day,model,state){
  let out='<div class="v3-day-hero"><div class="v3-day-hero-top"><div class="v3-kicker">'+esc(datePretty(day.date))+' · '+esc(model.timeZone)+'</div><div class="v3-day-nav"><button type="button" data-v3-shift="-1" aria-label="Предыдущий день">←</button><button type="button" data-v3-shift="1" aria-label="Следующий день">→</button></div></div><div class="v3-hero-caption">'+esc(priority.caption)+'</div><h2>'+esc(priority.title)+'</h2><p>'+esc(priority.why)+'</p></div>';
  if(lens==='all'||lens==='psychology')out+='<section class="v3-source-card v3-psych-card">'+psychPanel(day,state)+'</section>';
  if(lens==='all'||lens==='astrology')out+='<section class="v3-source-card v3-astro-card">'+astroPanel(day,model,state)+'</section>';
+ out+=archivePanel(day.date)+teachingsPanel(day);
  if(lens==='all')out+='<div class="v3-principle">При расхождении рекомендаций дедлайны, наблюдаемые данные и ваше самочувствие имеют приоритет над символическими календарными правилами.</div>';
- const root=document.getElementById('astro-day');if(!root)return;root.innerHTML=out;
+ const root=document.getElementById('astro-day');if(!root)return;root.innerHTML=out;bindArchive(root);void fillTeachings(day.date);
  root.querySelectorAll('[data-v3-shift]').forEach(b=>b.onclick=()=>{
  const d=new Date(day.date+'T12:00:00');d.setDate(d.getDate()+Number(b.dataset.v3Shift));
  const next=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -502,7 +556,7 @@ function dayPanel(day,model,state){
   }
  };
  const disconnect=root.querySelector('[data-v3-disconnect]');if(disconnect)disconnect.onclick=()=>{
-  if(!confirm('Отключить Карту сознания и удалить переданную сводку из браузера планнера?'))return;
+  if(!confirm('Отключить Карту сознания и удалить переданную копию из браузера планнера?'))return;
   psychology=null;try{localStorage.removeItem(PSY_KEY)}catch{}
   paint();
  };
@@ -511,7 +565,7 @@ function paintMapConnection(){
  const box=document.getElementById('v3-map-connection');if(!box)return;
  const origin=psychology?.source==='conscious-map-v2'?MAP_ORIGIN:ORIGINAL_MAP_ORIGIN;
  const link='<div class="v3-link-actions"><a href="'+origin+'" target="_blank" rel="noopener noreferrer">Открыть Карту сознания ↗</a></div>';
- let out='<div class="v3-section-top"><h3>Карта сознания</h3><span class="v3-chip '+(psychology?'connected':'')+'">'+(psychology?'Сводка получена':'Связь не настроена')+'</span></div>';
+ let out='<div class="v3-section-top"><h3>Карта сознания</h3><span class="v3-chip '+(psychology?'connected':'')+'">'+(psychology?(psychology.archive?'Вся Карта получена':'Сводка получена'):'Связь не настроена')+'</span></div>';
  if(mapTransferError)out+='<p class="v3-muted-warning" role="status">'+esc(mapTransferError)+'</p>';
  if(!psychology){
   box.innerHTML=out+'<p class="v3-small">В Карте откройте «Исследование» и нажмите «Передать контрольные даты». Сводка появится в этом браузере.</p>'+link;
@@ -524,6 +578,7 @@ function paintMapConnection(){
  if(goals.length)out+=goals.map(g=>'<div class="v3-real-task"><span>Цель</span><strong>'+esc(g.title)+'</strong></div>').join('');
  if(checks.length)out+='<div class="v3-month-tasks">'+checks.map(e=>'<button type="button" data-v3-map-date="'+esc(e.due)+'"><time datetime="'+esc(e.due)+'">'+esc(e.due)+'</time><span>'+esc(e.action)+'</span></button>').join('')+'</div>';
  else out+='<p class="v3-small">В переданной сводке нет проверок с назначенной датой. Создайте проверку в «Исследовании» и передайте сводку повторно, чтобы она появилась в календаре.</p>';
+ if(psychology.archive)out+='<p class="v3-small">Полная копия: '+Object.keys(psychology.archive).length+' разделов. Все тексты и разметка — под выбранной датой.</p>';
  box.innerHTML=out+link;
  box.querySelectorAll('[data-v3-map-date]').forEach(b=>b.onclick=()=>app.selectDate(b.dataset.v3MapDate));
 }
@@ -559,6 +614,7 @@ function sanitiseSnapshot(value){
  const experiments=Array.isArray(value.experiments)?value.experiments.slice(0,20):[];
  const hypotheses=Array.isArray(value.hypotheses)?value.hypotheses.slice(0,10):[];
  return {version:1,source:value.source,exportedAt:Number(value.exportedAt)||Date.now(),
+  ...(value.archive?{archive:validateArchive(value.archive)}:{}),
   goals:goals.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),readiness:Math.max(0,Math.min(100,Number(x.readiness)||0)),supportCount:Math.max(0,Math.min(999,Number(x.supportCount)||0)),riskCount:Math.max(0,Math.min(999,Number(x.riskCount)||0))})),
   experiments:experiments.map(x=>({id:truncate(x.id,80),action:truncate(x.action,220),due:isValidDate(x.due)?x.due:'',hypothesisId:truncate(x.hypothesisId,80)})),
   hypotheses:hypotheses.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),expectedBy:isValidDate(x.expectedBy)?x.expectedBy:''})),
@@ -571,7 +627,13 @@ if(importOrigin&&window.opener){
   if(event.origin!==importOrigin||event.source!==window.opener||event.data?.type!=='CONSCIOUS_MAP_TO_PLANNER_V1')return;
   try{
    const data=sanitiseSnapshot(event.data.payload);
-   localStorage.setItem(PSY_KEY,JSON.stringify(data));
+   if(!data.archive&&psychology?.archive)data.archive=psychology.archive;
+   const previous=localStorage.getItem(PSY_KEY);
+   if(previous)localStorage.setItem(PSY_KEY+'_previous',previous);
+   const serialized=JSON.stringify(data);
+   localStorage.setItem(PSY_KEY,serialized);
+   if(localStorage.getItem(PSY_KEY)!==serialized)throw Error('Не удалось проверить сохранение');
+   event.source.postMessage({type:'IYTN_PLANNER_SAVED'},event.origin);
    psychology=data;mapTransferError='';
    const url=new URL(location.href);
    url.searchParams.delete('connect');
