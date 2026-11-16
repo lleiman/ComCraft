@@ -317,11 +317,10 @@ function todayIso(){const d=new Date();return d.getFullYear()+'-'+String(d.getMo
 function datePretty(date){return new Date(date+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long',weekday:'long'})}
 function dayDiff(from,to){const a=Date.parse(from+'T12:00:00'),b=Date.parse(to+'T12:00:00');return Math.round((b-a)/86400000)}
 function contentHeader(){
- return '<div class="v3-overline">IT’S YOUR TIME NOW · DECISION SYSTEM</div><h1>Планнер <em>сознания и времени.</em></h1>'+
- '<p class="lead v3-lead">Один календарь для задач, психологических наблюдений и традиционных временных систем. Вначале реальные сроки и ваше состояние; ниже символический контекст.</p>'+
- '<div class="v3-top-tools"><div class="v3-link-actions"><button type="button" data-v3-teachings>Все учения</button><button type="button" data-v3-calculations>Расчёты выбранного дня</button></div><div class="v3-lenses" role="group" aria-label="Система рекомендаций">'+
- [['all','Все системы'],['psychology','Психология'],['astrology','Астрология']].map(x=>'<button data-v3-lens="'+x[0]+'" aria-pressed="'+(lens===x[0])+'">'+x[1]+'</button>').join('')+
- '</div><div class="v3-cats" role="group" aria-label="Область дел">'+tabs.map(x=>'<button data-v3-cat="'+x[0]+'" aria-pressed="'+(active===x[0])+'">'+x[1]+'</button>').join('')+'</div></div>'
+ return '<div class="v6-intro"><div class="v3-overline">IT’S YOUR TIME NOW</div><h1>Ваш <em>план.</em></h1><p class="lead v3-lead">Выберите день, неделю или месяц. Сначала действия и основания, подробные учения ниже.</p></div>'+
+ '<details class="v6-tools"><summary>Фильтры и дополнительные настройки</summary><div class="v3-top-tools"><div class="v3-link-actions"><button type="button" data-v3-teachings>Все учения</button><button type="button" data-v3-calculations>Расчёты выбранного дня</button></div><div class="v3-lenses" role="group" aria-label="Система рекомендаций">'+
+ [['all','Все источники'],['psychology','Мои данные'],['astrology','Традиции']].map(x=>'<button type="button" data-v3-lens="'+x[0]+'" aria-pressed="'+(lens===x[0])+'">'+x[1]+'</button>').join('')+
+ '</div><div class="v3-cats" role="group" aria-label="Область дел">'+tabs.map(x=>'<button type="button" data-v3-cat="'+x[0]+'" aria-pressed="'+(active===x[0])+'">'+x[1]+'</button>').join('')+'</div></div></details>';
 }
 function calendar(){
  let h=legacyCalendar();
@@ -734,13 +733,14 @@ function archiveGoals(){
  const a=psychology?.archive?.goals;
  if(Array.isArray(a)&&a.length)return a.filter(g=>g&&g.status==='active').map(g=>({
  id:g.id,title:g.text||g.title||'',probability:typeof g.plan?.probability==='number'&&Number.isFinite(g.plan.probability)?Math.max(0,Math.min(1,g.plan.probability)):null,
+ modelInfo:g.plan?.modelInfo||null,
  steps:Array.isArray(g.plan?.steps)?g.plan.steps.slice(0,4):[],
  supports:Array.isArray(g.plan?.factors?.supports)?g.plan.factors.supports.slice(0,3):[],
  risks:Array.isArray(g.plan?.factors?.risks)?g.plan.factors.risks.slice(0,3):[],
  history:Array.isArray(g.history)?g.history.slice(-10):[]
  }));
  return (psychology?.goals||[]).map(g=>({
- id:g.id,title:g.title,probability:g.modelProbability??null,steps:g.nextSteps||[],
+ id:g.id,title:g.title,probability:g.modelProbability??null,modelInfo:g.modelInfo||null,steps:g.nextSteps||[],
  supports:g.supportFactors||[],risks:g.riskFactors||[],history:[]
  }));
 }
@@ -911,7 +911,8 @@ function sanitiseSnapshot(value){
  const hypotheses=Array.isArray(value.hypotheses)?value.hypotheses.slice(0,10):[];
  return {version:1,source:value.source,exportedAt:Number(value.exportedAt)||Date.now(),
   ...(value.archive?{archive:validateArchive(value.archive)}:{}),
-  goals:goals.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),readiness:Math.max(0,Math.min(100,Number(x.readiness)||0)),supportCount:Math.max(0,Math.min(999,Number(x.supportCount)||0)),riskCount:Math.max(0,Math.min(999,Number(x.riskCount)||0)),modelProbability:typeof x.modelProbability==='number'&&Number.isFinite(x.modelProbability)?Math.max(0,Math.min(1,x.modelProbability)):null,nextSteps:Array.isArray(x.nextSteps)?x.nextSteps.slice(0,4).map(q=>truncate(q,220)):[],supportFactors:Array.isArray(x.supportFactors)?x.supportFactors.slice(0,4).map(q=>truncate(q,220)):[],riskFactors:Array.isArray(x.riskFactors)?x.riskFactors.slice(0,4).map(q=>truncate(q,220)):[]})),
+  goals:goals.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),readiness:Math.max(0,Math.min(100,Number(x.readiness)||0)),supportCount:Math.max(0,Math.min(999,Number(x.supportCount)||0)),riskCount:Math.max(0,Math.min(999,Number(x.riskCount)||0)),modelProbability:typeof x.modelProbability==='number'&&Number.isFinite(x.modelProbability)?Math.max(0,Math.min(1,x.modelProbability)):null,nextSteps:Array.isArray(x.nextSteps)?x.nextSteps.slice(0,4).map(q=>truncate(q,220)):[],supportFactors:Array.isArray(x.supportFactors)?x.supportFactors.slice(0,4).map(q=>truncate(q,220)):[],riskFactors:Array.isArray(x.riskFactors)?x.riskFactors.slice(0,4).map(q=>truncate(q,220)):[],
+ modelInfo:x.modelInfo&&typeof x.modelInfo==='object'?{provider:truncate(x.modelInfo.provider,40),model:truncate(x.modelInfo.model,100),calculatedAt:Number(x.modelInfo.calculatedAt)||0}:null})),
   experiments:experiments.map(x=>({id:truncate(x.id,80),action:truncate(x.action,220),due:isValidDate(x.due)?x.due:'',hypothesisId:truncate(x.hypothesisId,80)})),
   hypotheses:hypotheses.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),expectedBy:isValidDate(x.expectedBy)?x.expectedBy:''})),
   predictions:(Array.isArray(value.predictions)?value.predictions:[]).slice(0,12).map(x=>({id:truncate(x.id,80),claim:truncate(x.claim,650),basis:truncate(x.basis,500),year:Number(x.year)||0,confidenceLevel:Math.max(1,Math.min(3,Number(x.confidenceLevel)||1))})),
