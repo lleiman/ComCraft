@@ -762,19 +762,18 @@ function forecastTimeline(days,horizon){
  }).join('')+'</div>';
 }
 function forecastEvidence(start,end){
- const a=psychology?.archive;
- if(!a)return '';
+ const a=psychology?.archive||{};
  const year=+end.slice(0,4);
- const hypotheses=(Array.isArray(a.hypotheses)?a.hypotheses:[])
- .filter(x=>x&&x.status==='pending'&&Number(x.year)===year).slice(0,3);
- const research=(Array.isArray(a.researchHypotheses)?a.researchHypotheses:[])
- .filter(x=>x&&x.status==='active'&&(!x.expectedBy||(x.expectedBy>=start&&x.expectedBy<=end))).slice(0,3);
- const intentions=(Array.isArray(a.intentions)?a.intentions:[])
- .filter(x=>x&&x.status==='active'&&Number(x.year)===year).slice(0,2);
+ const hypotheses=(Array.isArray(a.hypotheses)&&a.hypotheses.length?a.hypotheses:psychology?.predictions||[])
+ .filter(x=>x&&(x.status==='pending'||!x.status)&&Number(x.year)===year).slice(0,4);
+ const research=(Array.isArray(a.researchHypotheses)&&a.researchHypotheses.length?a.researchHypotheses:psychology?.researchForecasts||[])
+ .filter(x=>x&&(x.status==='active'||!x.status)&&(!x.expectedBy||(x.expectedBy>=start&&x.expectedBy<=end))).slice(0,4);
+ const intentions=(Array.isArray(a.intentions)&&a.intentions.length?a.intentions:psychology?.intentions||[])
+ .filter(x=>x&&(x.status==='active'||!x.status)&&Number(x.year)===year).slice(0,3);
  let out='';
  if(hypotheses.length){
  out+='<div class="v5-kicker">Годовые гипотезы Карты · ещё не подтверждены</div>';
- out+=hypotheses.map(h=>forecastRow('Основание '+(h.confidence||1)+'/3',h.claim,'hypothesis')).join('');
+ out+=hypotheses.map(h=>forecastRow('Сила основания '+(h.confidenceLevel||h.confidence||1)+'/3',h.claim,'hypothesis')).join('');
  }
  if(research.length){
  out+='<div class="v5-kicker">Проверяемые психологические гипотезы</div>';
@@ -848,8 +847,8 @@ function paintForecast(state){
  return x+'</article>';
  }).join('')+'</div>';
  }else html+='<p class="v5-faded">Активных целей в переданной Карте нет.</p>';
- if(!context)html+='<p class="v5-foot">Чтобы увидеть жизненные гипотезы, историю целей и исходные психологические данные, в разделе «Исследование» основной Карты нажмите «Передать всю Карту в планнер». Передача включает личные записи, поэтому выполняется только по вашему действию.</p>';
- else html+=forecastEvidence(start,end);
+ html+=forecastEvidence(start,end);
+ if(!context)html+='<p class="v5-foot">Показаны переданные прогнозные формулировки и оценки целей. Исходные дневники, тесты и документы сюда не копируются. Полный архив можно отдельно передать из Карты, но он будет храниться в браузере планнера без шифрования.</p>';
  html+=forecastCheckins(end)+'</div>';
  }
  html+='<div class="v5-columns"><section><div class="v5-kicker">КОНКРЕТНЫЕ ДЕЛА И СРОКИ</div>';
@@ -875,6 +874,9 @@ function sanitiseSnapshot(value){
   goals:goals.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),readiness:Math.max(0,Math.min(100,Number(x.readiness)||0)),supportCount:Math.max(0,Math.min(999,Number(x.supportCount)||0)),riskCount:Math.max(0,Math.min(999,Number(x.riskCount)||0)),modelProbability:typeof x.modelProbability==='number'&&Number.isFinite(x.modelProbability)?Math.max(0,Math.min(1,x.modelProbability)):null,nextSteps:Array.isArray(x.nextSteps)?x.nextSteps.slice(0,4).map(q=>truncate(q,220)):[],supportFactors:Array.isArray(x.supportFactors)?x.supportFactors.slice(0,4).map(q=>truncate(q,220)):[],riskFactors:Array.isArray(x.riskFactors)?x.riskFactors.slice(0,4).map(q=>truncate(q,220)):[]})),
   experiments:experiments.map(x=>({id:truncate(x.id,80),action:truncate(x.action,220),due:isValidDate(x.due)?x.due:'',hypothesisId:truncate(x.hypothesisId,80)})),
   hypotheses:hypotheses.map(x=>({id:truncate(x.id,80),title:truncate(x.title,180),expectedBy:isValidDate(x.expectedBy)?x.expectedBy:''})),
+  predictions:(Array.isArray(value.predictions)?value.predictions:[]).slice(0,12).map(x=>({id:truncate(x.id,80),claim:truncate(x.claim,650),basis:truncate(x.basis,500),year:Number(x.year)||0,confidenceLevel:Math.max(1,Math.min(3,Number(x.confidenceLevel)||1))})),
+  researchForecasts:(Array.isArray(value.researchForecasts)?value.researchForecasts:[]).slice(0,12).map(x=>({id:truncate(x.id,80),claim:truncate(x.claim,650),expectedBy:isValidDate(x.expectedBy)?x.expectedBy:'',confidence:Math.max(0,Math.min(1,Number(x.confidence)||0))})),
+  intentions:(Array.isArray(value.intentions)?value.intentions:[]).slice(0,10).map(x=>({id:truncate(x.id,80),claim:truncate(x.claim,400),year:Number(x.year)||0})),
   stats:{evidenceCount:Math.max(0,Math.min(99999,Number(value.stats?.evidenceCount)||0)),experimentsOpen:Math.max(0,Math.min(99999,Number(value.stats?.experimentsOpen)||0)),hypothesesActive:Math.max(0,Math.min(99999,Number(value.stats?.hypothesesActive)||0)),sphereCounts:Object.fromEntries(['self','shadow','relations','body','meaning','lineage','work'].map(k=>[k,Math.max(0,Math.min(99999,Number(value.stats?.sphereCounts?.[k])||0))]))}};
 }
 const connection=new URLSearchParams(location.search).get('connect');
