@@ -627,9 +627,11 @@ function dayPanel(day,model,state){
  const next=findNextGoal(day.date,state);
  const priority=due.length?{caption:'ПРОВЕРКА В КАРТЕ',title:due[0].action,why:'Реальный срок вашей проверки'}:next&&next.date===day.date?{caption:'СРОК СЕГОДНЯ',title:next.name,why:'Установленный вами дедлайн'}:psychology?.goals?.length?{caption:'ВАША ЦЕЛЬ',title:psychology.goals[0].title,why:'Цель из Карты сознания'}:next?{caption:'БЛИЖАЙШАЯ ЦЕЛЬ',title:next.name,why:'Дедлайн '+next.date}:{caption:'ФОКУС ДНЯ',title:'Выберите одно важное действие',why:'Приоритет задаётся реальной задачей, а не астрологией'};
  const checkin=currentCheckin(day.date);
- let out='<div class="v3-day-hero"><div class="v3-day-hero-top"><div class="v3-kicker">'+esc(datePretty(day.date))+' · '+esc(model.timeZone)+'</div><div class="v3-day-nav"><button type="button" data-v3-shift="-1" aria-label="Предыдущий день">←</button><button type="button" data-v3-shift="1" aria-label="Следующий день">→</button></div></div><div class="v3-hero-caption">'+esc(priority.caption)+'</div><h2>'+esc(priority.title)+'</h2><p>'+esc(priority.why)+'</p></div>';
+ let out='<div class="v6-day-navigation"><button type="button" data-v3-shift="-1" aria-label="Предыдущий день">←</button><span>Выбранный день: '+esc(datePretty(day.date))+'</span><button type="button" data-v3-shift="1" aria-label="Следующий день">→</button></div>';
+ out+='<details class="v5-reference" id="v6-day-analysis"><summary>Разбор этого дня: психологическое состояние и традиционные методы</summary>';
  if(lens==='all'||lens==='psychology')out+='<section class="v3-source-card v3-psych-card">'+psychPanel(day,state)+'</section>';
  if(lens==='all'||lens==='astrology')out+='<section class="v3-source-card v3-astro-card">'+astroPanel(day,model,state)+'</section>';
+ out+='</details>';
  out+='<details class="v5-reference" id="v5-archive-ref"><summary>Психологический архив и исходные записи</summary>'+archivePanel(day.date)+'</details>';
  out+='<details class="v5-reference" id="v5-teachings-ref"><summary>Все 20 учений · расчёты и подробные объяснения</summary>'+teachingsPanel(day)+'</details>';
  if(lens==='all')out+='<div class="v3-principle">При расхождении рекомендаций дедлайны, наблюдаемые данные и ваше самочувствие имеют приоритет над символическими календарными правилами.</div>';
