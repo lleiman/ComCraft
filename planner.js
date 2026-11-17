@@ -331,7 +331,7 @@ function calendar(){
  let h=legacyCalendar();
  // Keep legacy calendar and all existing engines intact. Recompose them rather than patching backend rendering.
  h=h.replace(/^<div class="eyebrow">PERSONAL TIME MAP<\/div><h1>Ваш <em>календарь\.<\/em><\/h1><p class="lead">[\s\S]*?<\/p>/,contentHeader());
- h=h.replace('<div class="card"><div class="flex">','<section id="v5-forecast" class="v5-forecast" aria-live="polite"><p>Составляем прогноз из календаря и вашей Карты сознания...</p></section><div class="v3-workbench"><section class="v3-left"><div class="card v3-calendar"><div class="flex v3-month-bar">');
+ h=h.replace('<div class="card"><div class="flex">','<section id="cosmic-orbit" class="cosmic-orbit" aria-label="Планетарная карта и аспекты"><div class="orbit-loading">ЗАГРУЖАЕМ ОРБИТАЛЬНЫЕ ДАННЫЕ…</div></section><section id="v5-forecast" class="v5-forecast" aria-live="polite"><p>Составляем прогноз из календаря и вашей Карты сознания...</p></section><div class="v3-workbench"><section class="v3-left"><div class="card v3-calendar"><div class="flex v3-month-bar">');
  h=h.replace('<div class="calendar-toolbar">','<details id="v3-teaching-layers" class="v3-filter-drawer"'+(layersOpen?' open':'')+'><summary>Нумерология, астрология и другие слои</summary><div class="calendar-toolbar">');
  h=h.replace('<div class="calendar" id="calendar-grid">','</details><div class="v3-mode-row"><div class="v3-view-switch"><button data-v3-view="month" aria-pressed="'+(view==='month')+'">Месяц</button><button data-v3-view="week" aria-pressed="'+(view==='week')+'">Неделя</button></div><button data-v3-today class="v3-today">Сегодня</button></div><div class="v3-legend"><span><i class="astro-dot good"></i>Традиционно подходит</span><span><i class="astro-dot caution"></i>Осторожнее</span><span><i class="v3-psy-marker"></i>Контрольная точка</span></div><div class="calendar" id="calendar-grid">');
  h=h.replace(/<div class="section flex"><h2>Ваш день<\/h2><span>[\s\S]*?<\/span><\/div>/,'');
@@ -783,6 +783,7 @@ function paint(){
  if(!visible())return;
  bind();markSelections();paintMapConnection();
  const state=st(),model=cache[key(state)];
+ window.IYTN_COSMIC?.mount(state);
  window.IYTN_GOOGLE_CALENDAR.update(state.selected,state.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC');
  if(!model){if(error)showError(error);return}
  const idx=Object.fromEntries(model.days.map(d=>[d.date,d]));
