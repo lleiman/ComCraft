@@ -281,3 +281,28 @@ body.cosmic-mode .orbit-planet-list button:hover,body.cosmic-mode .orbit-aspect-
 @media(prefers-reduced-motion:reduce){
  body.cosmic-mode .side .nav button,.v10-workspace,.v10-rail-toggle{transition:none!important}
 }
+
+
+/* v10 polish — monochrome interface with sparse orange functional accents. */
+body.cosmic-mode{
+ --bg:#030504;
+ --panel:#0a100c;
+ --panel2:#111b15;
+ --ink:#eef4ed;
+ --muted:#afc0b4;
+ --lime:#fb895c;
+ --line:#2e3e33;
+ --dark:#030605;
+}
+@media(min-width:951px){
+ body.cosmic-mode .side{gap:14px}
+ body.cosmic-mode .side .logo{margin:8px 0 7px}
+}
+body.cosmic-mode .v3-calendar .day.selected,
+body.cosmic-mode .v3-calendar .day.today{border-color:#fb956d}
+body.cosmic-mode .v3-calendar .day .astro-day-tone{color:#d7e0da}
+body.cosmic-mode .v3-calendar .day.astro-caution .astro-day-tone{color:#f48d63}
+body.cosmic-mode .v10-rail-header{background:#060b08}
+body.cosmic-mode .v10-calendar-more .v3-month-highlights{color:#d6e2d5}
+body.cosmic-mode .orbit-card{background:#070a08}
+body.cosmic-mode .orbit-aspect-list button.tense{border-left:2px solid #df6a48}
