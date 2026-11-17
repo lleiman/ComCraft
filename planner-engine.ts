@@ -168,3 +168,70 @@ export function buildAstroPlanner(month,tz,rich,profile={}){
   });
   return {version:2,month,timeZone:tz,natal:natal?{sunSign:natal.sunSign,moonSign:natal.moonSign}:null,days,method:'Astronomy Engine (тропический зодиак), lunar-javascript (Хуанли). Время переходов в часовом поясе профиля.',warning:'Астрологические рекомендации являются культурной интерпретацией. Они не доказаны как способ прогнозировать успех решений; вопросы здоровья, финансов и безопасности решаются по фактическим данным.'};
 }
+
+
+// Live orbit telemetry for the public visual: astronomical positions, not a psychological score.
+// Tropical geocentric longitudes, computed with astronomy-engine.
+const ORBIT_BODIES=[
+  {id:'Sun',label:'Солнце',glyph:'☉'},
+  {id:'Moon',label:'Луна',glyph:'☽'},
+  {id:'Mercury',label:'Меркурий',glyph:'☿'},
+  {id:'Venus',label:'Венера',glyph:'♀'},
+  {id:'Mars',label:'Марс',glyph:'♂'},
+  {id:'Jupiter',label:'Юпитер',glyph:'♃'},
+  {id:'Saturn',label:'Сатурн',glyph:'♄'},
+  {id:'Uranus',label:'Уран',glyph:'♅'},
+  {id:'Neptune',label:'Нептун',glyph:'♆'},
+  {id:'Pluto',label:'Плутон',glyph:'♇'}
+];
+const ORBIT_ASPECTS=[
+ {degrees:0,key:'conjunction',name:'Соединение',glyph:'☌',tense:false},
+ {degrees:60,key:'sextile',name:'Секстиль',glyph:'⚹',tense:false},
+ {degrees:90,key:'square',name:'Квадрат',glyph:'□',tense:true},
+ {degrees:120,key:'trine',name:'Трин',glyph:'△',tense:false},
+ {degrees:180,key:'opposition',name:'Оппозиция',glyph:'☍',tense:true}
+];
+function orbitLongitude(body,date){
+ if(body==='Sun')return norm(Astro.SunPosition(date).elon);
+ if(body==='Moon')return norm(Astro.EclipticGeoMoon(date).lon);
+ return norm(Astro.Ecliptic(Astro.GeoVector(body,date,true)).elon);
+}
+function angularSeparation(a,b){let dist=Math.abs(norm(a)-norm(b));return Math.min(dist,360-dist);}
+export function buildOrbitTelemetry(date,tz){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Дата должна быть YYYY-MM-DD');
+ const [year,mon,day]=date.split('-').map(Number);
+ if(year<1900||year>2100||new Date(Date.UTC(year,mon-1,day)).toISOString().slice(0,10)!==date)throw Error('Дата вне диапазона');
+ new Intl.DateTimeFormat('en',{timeZone:tz});
+ const hours=[0,4,8,12,16,20,24];
+ const snapshots=hours.map(hour=>{
+  const at=localToUtc(date,hour,tz);
+  const positions={};
+  for(const item of ORBIT_BODIES){
+   try{const lon=orbitLongitude(item.id,at);if(Number.isFinite(lon))positions[item.id]=+lon.toFixed(5);}catch{}
+  }
+  return {hour,utc:at.toISOString(),positions};
+ });
+ const center=new Date(snapshots[3].utc),positions=snapshots[3].positions;
+ const planets=ORBIT_BODIES.filter(x=>Number.isFinite(positions[x.id])).map(x=>{
+  const lon=positions[x.id],prev=snapshots[0].positions[x.id],next=snapshots[6].positions[x.id];
+  const speed=Number.isFinite(prev)&&Number.isFinite(next)?delta(prev,next):null;
+  const sign=SIGNS[signIndex(lon)];
+  return {...x,longitude:lon,sign,degreeInSign:+(lon%30).toFixed(2),speed24:speed===null?null:+speed.toFixed(4),retrograde:speed===null?null:speed<0};
+ });
+ const aspects=[];
+ for(let i=0;i<planets.length;i++)for(let j=i+1;j<planets.length;j++){
+  const a=planets[i],b=planets[j],distance=angularSeparation(a.longitude,b.longitude);
+  for(const asp of ORBIT_ASPECTS){
+   const orb=Math.abs(distance-asp.degrees);
+   const limit=(a.id==='Sun'||a.id==='Moon'||b.id==='Sun'||b.id==='Moon')?5.5:4;
+   if(orb<=limit)aspects.push({a:a.id,b:b.id,degree:asp.degrees,kind:asp.key,name:asp.name,glyph:asp.glyph,
+    orb:+orb.toFixed(2),tense:asp.tense});
+  }
+ }
+ aspects.sort((a,b)=>a.orb-b.orb);
+ const phase=Astro.MoonPhase(center);
+ const illumination=Math.round((1-Math.cos(phase*Math.PI/180))*50);
+ return {version:1,date,timezone:tz,model:'astronomy-engine / tropical geocentric ecliptic',
+  sampleHours:hours,frames:snapshots,planets,aspects,moon:{phase:moonPhaseName(phase),illumination},
+  notes:'Фактические астрономические долготы. Аспекты — геометрические расстояния и символические астрологические категории. Они не измеряют успешность, психологическое состояние или вероятность событий.'};
+}
