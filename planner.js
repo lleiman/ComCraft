@@ -327,6 +327,91 @@ function contentHeader(){
  [['all','Все источники'],['psychology','Мои данные'],['astrology','Традиции']].map(x=>'<button type="button" data-v3-lens="'+x[0]+'" aria-pressed="'+(lens===x[0])+'">'+x[1]+'</button>').join('')+
  '</div><div class="v3-cats" role="group" aria-label="Область дел">'+tabs.map(x=>'<button type="button" data-v3-cat="'+x[0]+'" aria-pressed="'+(active===x[0])+'">'+x[1]+'</button>').join('')+'</div></div></details>';
 }
+/* v10 layout: a genuine collapsible, accessible navigation rail + primary data canvas.
+ * Restructures the existing DOM, preserving all original element IDs, event handlers
+ * and browser-held personal data. No network calls or data deletion occur here. */
+const CAL_RAIL_KEY='iytn_calendar_rail_collapsed_v1';
+const MAIN_RAIL_KEY='iytn_main_nav_collapsed_v1';
+function layoutPreference(key,fallback){
+ try{const x=localStorage.getItem(key);return x===null?fallback:x==='1';}catch{return fallback;}
+}
+let calRailCollapsed=layoutPreference(CAL_RAIL_KEY,window.innerWidth<=850);
+let primaryRailCollapsed=layoutPreference(MAIN_RAIL_KEY,true);
+function persistLayoutPreference(key,value){try{localStorage.setItem(key,value?'1':'0')}catch{}}
+function setCalendarRail(value){
+ calRailCollapsed=!!value;persistLayoutPreference(CAL_RAIL_KEY,calRailCollapsed);
+ const shell=document.getElementById('v10-workspace'),button=shell?.querySelector('[data-v10-rail-toggle]');
+ if(!shell||!button)return;
+ shell.classList.toggle('v10-calendar-closed',calRailCollapsed);
+ button.setAttribute('aria-expanded',String(!calRailCollapsed));
+ button.setAttribute('aria-label',calRailCollapsed?'Развернуть календарь':'Свернуть календарь');
+ button.setAttribute('title',calRailCollapsed?'Развернуть календарь':'Свернуть календарь');
+ const icon=button.querySelector('.v10-toggle-icon');if(icon)icon.textContent=calRailCollapsed?'»':'«';
+ const label=button.querySelector('.v10-toggle-label');if(label)label.textContent=calRailCollapsed?'Открыть календарь':'Свернуть';
+ const summary=shell.querySelector('.v10-rail-caption');
+ if(summary)summary.textContent=calRailCollapsed?'КАЛЕНДАРЬ':'НАВИГАЦИЯ / КАЛЕНДАРЬ';
+}
+function setPrimaryRail(value){
+ primaryRailCollapsed=!!value;persistLayoutPreference(MAIN_RAIL_KEY,primaryRailCollapsed);
+ document.body.classList.toggle('v10-primary-closed',primaryRailCollapsed);
+ const button=document.querySelector('[data-v10-primary-toggle]');
+ if(button){
+  button.setAttribute('aria-expanded',String(!primaryRailCollapsed));
+  button.setAttribute('aria-label',primaryRailCollapsed?'Показать главное меню':'Свернуть главное меню');
+  button.setAttribute('title',primaryRailCollapsed?'Показать главное меню':'Свернуть главное меню');
+  button.textContent=primaryRailCollapsed?'»':'«';
+ }
+ const nav=document.getElementById('sidebar');
+ if(nav)nav.querySelectorAll('button').forEach(b=>{
+  const label=b.textContent.trim().replace(/\s+/g,' ');
+  if(label&&!b.getAttribute('title'))b.setAttribute('title',label);
+ });
+}
+function setupPrimaryRail(){
+ const aside=document.querySelector('.app > .side');if(!aside)return;
+ if(!aside.querySelector('[data-v10-primary-toggle]')){
+  const b=document.createElement('button');
+  b.type='button';b.className='v10-primary-toggle';b.setAttribute('data-v10-primary-toggle','');
+  b.onclick=()=>setPrimaryRail(!primaryRailCollapsed);
+  aside.insertBefore(b,aside.firstChild);
+ }
+ setPrimaryRail(primaryRailCollapsed);
+}
+function organizeWorkspace(){
+ const previous=document.getElementById('v10-workspace');
+ if(previous){setCalendarRail(calRailCollapsed);return;}
+ const old=document.querySelector('.v3-workbench');
+ const orbit=document.getElementById('cosmic-orbit');
+ const forecast=document.getElementById('v5-forecast');
+ const left=old?.querySelector('.v3-left'),right=old?.querySelector('.v3-right');
+ if(!old||!orbit||!forecast||!left||!right)return;
+ const shell=document.createElement('div');shell.id='v10-workspace';shell.className='v10-workspace';
+ const sidebar=document.createElement('aside');sidebar.className='v10-calendar-rail';
+ sidebar.setAttribute('aria-label','Календарь и навигация по датам');
+ const header=document.createElement('div');header.className='v10-rail-header';
+ header.innerHTML='<span class="v10-rail-caption">НАВИГАЦИЯ / КАЛЕНДАРЬ</span><button type="button" class="v10-rail-toggle" data-v10-rail-toggle aria-expanded="true" aria-controls="v10-calendar-body"><span class="v10-toggle-label">Свернуть</span><span class="v10-toggle-icon" aria-hidden="true">«</span></button>';
+ sidebar.append(header);
+ const body=document.createElement('div');body.id='v10-calendar-body';body.className='v10-calendar-body';
+ const calendar=left.querySelector('.v3-calendar');if(calendar)body.append(calendar);
+ const more=document.createElement('details');more.className='v10-calendar-more';
+ more.innerHTML='<summary>СОБЫТИЯ / ПОДКЛЮЧЕНИЯ <span aria-hidden="true">+</span></summary>';
+ while(left.firstChild)more.append(left.firstChild);
+ if(more.children.length>1)body.append(more);
+ sidebar.append(body);
+ const main=document.createElement('div');main.className='v10-main';
+ const extra=document.createElement('details');extra.className='v10-deep-systems';
+ extra.innerHTML='<summary><span>ДОПОЛНИТЕЛЬНЫЕ КАЛЕНДАРИ И РАСЧЁТЫ</span><small>GOOGLE · ТРАДИЦИИ · СОБЫТИЯ</small></summary>';
+ while(right.firstChild)extra.append(right.firstChild);
+ const legacyCalc=document.getElementById('v3-day-calculations');
+ if(legacyCalc)extra.append(legacyCalc);
+ shell.append(sidebar,main);
+ orbit.parentNode.insertBefore(shell,orbit);
+ main.append(orbit,forecast,extra);
+ old.remove();
+ header.querySelector('[data-v10-rail-toggle]').onclick=()=>setCalendarRail(!calRailCollapsed);
+ setCalendarRail(calRailCollapsed);
+}
+
 function calendar(){
  let h=legacyCalendar();
  // Keep legacy calendar and all existing engines intact. Recompose them rather than patching backend rendering.
@@ -341,6 +426,8 @@ function calendar(){
  return h;
 }
 function bind(){
+ setupPrimaryRail();
+ organizeWorkspace();
  document.querySelectorAll('[data-v3-lens]').forEach(b=>b.onclick=()=>{lens=b.dataset.v3Lens;savePref();paint()});
  document.querySelectorAll('[data-v3-cat]').forEach(b=>b.onclick=()=>{active=b.dataset.v3Cat;savePref();paint()});
  document.querySelectorAll('[data-v3-view]').forEach(b=>b.onclick=()=>{view=b.dataset.v3View;paint()});
