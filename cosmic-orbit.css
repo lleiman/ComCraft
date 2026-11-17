@@ -1,0 +1,117 @@
+/* IT'S YOUR TIME NOW / ORBIT VIEW
+ * The scene is drawn from astronomy-engine longitudes. Effects are decorative.
+ * Responsive, accessible controls; reduced motion is handled in JS.
+ */
+body.cosmic-mode{background:#030605!important;color:#e6eee8}
+body.cosmic-mode main{background:transparent}
+body.cosmic-mode .v6-intro h1{color:#f0f1ec}
+body.cosmic-mode .v6-intro .lead{color:#87978e}
+body.cosmic-mode .v6-tools{border-color:#26352c}
+body.cosmic-mode .v3-workbench{gap:17px}
+body.cosmic-mode .v3-calendar,
+body.cosmic-mode .astro-day-panel,
+body.cosmic-mode .v5-forecast,
+body.cosmic-mode .v3-source-card,
+body.cosmic-mode .v3-month-highlights,
+body.cosmic-mode .iytn-google-calendar{background:#080e0b!important;border-color:#293a30!important;box-shadow:none}
+body.cosmic-mode .v7-story{background:linear-gradient(125deg,#111a14,#090f0c);border-color:#344b37}
+body.cosmic-mode .v7-decide{background:#0b1710;border-color:#36513b}
+body.cosmic-mode .v7-domain,
+body.cosmic-mode .v7-system,
+body.cosmic-mode .v7-almanac-grid>div,
+body.cosmic-mode .v7-goal,
+body.cosmic-mode .v7-personal-tasks>div{background:#0d1711;border-color:#304435}
+body.cosmic-mode .v7-tag.good{color:#e1eadd}
+body.cosmic-mode .v7-tag.caution{color:#fb8b67}
+body.cosmic-mode .v7-eyebrow,
+body.cosmic-mode .v5-kicker{color:#d6e2d5}
+body.cosmic-mode .v9-meanings p{background:#0d1b12;border-color:#324938}
+body.cosmic-mode .v7-top-nav button{background:#15251a}
+body.cosmic-mode .v7-top-nav button:nth-child(2){background:#e8eee4;color:#172218}
+body.cosmic-mode .v3-lenses button[aria-pressed=true]{background:#ff724d;border-color:#ff724d;color:#140a05}
+body.cosmic-mode .v5-horizons button[aria-pressed=true]{background:#ff704e;color:#100905}
+
+#cosmic-orbit{display:block;isolation:isolate;margin:4px 0 25px;background:#030504;border:1px solid #273b2e;overflow:hidden;border-radius:17px;color:#eaf0e9;box-shadow:0 18px 65px #0009;font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#cosmic-orbit *,#cosmic-orbit *:before,#cosmic-orbit *:after{box-sizing:border-box}
+.orbit-header{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:22px 26px 19px;border-bottom:1px solid #29362d;background:#060908}
+.orbit-header>div:first-child{display:flex;flex-direction:column;gap:6px}
+.orbit-kicker{font-size:clamp(18px,2.7vw,32px);font-weight:700;letter-spacing:.22em;line-height:1.12;color:#f6f7f1;white-space:nowrap}
+.orbit-header small{font:500 9px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.25em;color:#809388}
+.orbit-heading-links{display:flex;gap:18px;align-items:center}
+.orbit-heading-links a{font:600 10px ui-monospace,monospace;letter-spacing:.1em;color:#e2efdf;text-decoration:none;white-space:nowrap}
+.orbit-heading-links a:hover{color:#ff885f}
+.orbit-heading-links>span{color:#fa774e;font:600 10px ui-monospace,monospace;white-space:nowrap}
+.orbit-metrics{display:grid;grid-template-columns:repeat(4,1fr);background:#070b09;border-bottom:1px solid #29372d}
+.orbit-metrics>div{padding:14px 19px;border-right:1px solid #28382e;display:flex;flex-direction:column;gap:5px;min-width:0}
+.orbit-metrics>div:last-child{border-right:0}
+.orbit-metrics span{font:550 9px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.12em;color:#849588}
+.orbit-metrics strong{font:650 13px ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#e8eee7}
+.orbit-stage{position:relative;width:100%;aspect-ratio:1.66/1;min-height:380px;max-height:820px;overflow:hidden;background:#030504;contain:layout paint}
+.orbit-stage:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 56%,#03050456 96%);opacity:.5}
+.orbit-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:pan-y;cursor:crosshair}
+.orbit-canvas:focus-visible{outline:2px solid #fc7b50;outline-offset:-6px}
+.orbit-corner{position:absolute;z-index:1;pointer-events:none;color:#758a7a;font:500 9px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.1em}
+.orbit-corner.left{top:22px;left:22px}
+.orbit-corner.right{right:22px;top:22px;text-align:right}
+.orbit-floating{position:absolute;z-index:1;pointer-events:none;bottom:22px;right:22px;display:flex;flex-direction:column;gap:6px;align-items:flex-end;padding:10px 14px;border:1px solid #3b5041;background:#051009de;border-radius:6px;max-width:50%}
+.orbit-floating strong{font:700 12px ui-monospace,monospace;color:#ecf2ea}
+.orbit-floating span{font:500 10px ui-monospace,monospace;color:#f27b53}
+.orbit-controls{border-top:1px solid #324338;border-bottom:1px solid #24342a;background:#080e0b;padding:16px 22px 12px}
+.orbit-control-line{display:flex;align-items:center;gap:12px}
+.orbit-control-line button{border:1px solid #754a3b;background:#1f1410;color:#ff8c67;border-radius:7px;width:35px;height:35px;font-size:16px;cursor:pointer}
+.orbit-control-line button:hover{background:#382116}
+.orbit-control-line b{font:600 10px ui-monospace,monospace;letter-spacing:.13em;color:#b8c4b7}
+.orbit-control-line output{margin-left:auto;font:700 17px ui-monospace,monospace;color:#eaf0e9}
+.orbit-controls input[type=range]{width:100%;accent-color:#f56d47;margin:16px 0 4px;height:5px;cursor:pointer}
+.orbit-time-labels{display:flex;justify-content:space-between;color:#7d8f80;font:500 9px ui-monospace,monospace}
+.orbit-controls p{font:400 10px/1.7 ui-monospace,monospace;color:#788e7b;margin:13px 0 0}
+.orbit-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#273a2d;border-top:1px solid #273a2d;border-bottom:1px solid #273a2d}
+.orbit-card{background:#070b09;padding:20px;min-width:0;max-height:350px;overflow-y:auto}
+.orbit-card h3{font:650 11px/1.5 ui-monospace,monospace;letter-spacing:.08em;display:flex;justify-content:space-between;gap:10px;margin:0 0 15px;padding-bottom:11px;border-bottom:1px solid #2c3a30;color:#d7e2d6}
+.orbit-card h3 small{font:500 10px ui-monospace,monospace;color:#8da090;white-space:nowrap}
+.orbit-mini-graph{width:100%}
+.orbit-card [data-orbit-graph]{width:100%;height:88px;margin-bottom:12px;overflow:visible}
+.orbit-planet-list,.orbit-aspect-list{display:grid;gap:2px}
+.orbit-planet-list button,.orbit-aspect-list button{display:grid;grid-template-columns:1fr 65px 65px;align-items:center;gap:7px;padding:8px 7px;border:1px solid transparent;border-radius:4px;background:transparent;color:#bbc9c0;text-align:left;cursor:pointer}
+.orbit-planet-list button:hover,.orbit-aspect-list button:hover{background:#132119;border-color:#2e4d38}
+.orbit-planet-list button[aria-pressed=true],.orbit-aspect-list button[aria-pressed=true]{border-color:#80432e;background:#22150f;color:#ff9876}
+.orbit-planet-list b,.orbit-aspect-list b{font:550 11px/1.5 ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orbit-planet-list span,.orbit-planet-list small,.orbit-aspect-list small{font:500 10px ui-monospace,monospace;color:#aab9aa;text-align:right}
+.orbit-aspect-list button{grid-template-columns:43px 1fr 58px}
+.orbit-aspect-list button>span{font:700 15px serif;color:#dae6db;white-space:nowrap}
+.orbit-aspect-list button.tense>span,.orbit-aspect-list button.tense small{color:#f4835c}
+.orbit-aspect-list p{color:#91a292;font:11px/1.7 ui-monospace,monospace}
+.orbit-selected{display:flex;align-items:center;gap:13px;border-bottom:1px solid #25392a;padding:7px 0 14px}
+.orbit-selected>span{font:36px serif;color:#ff895e}.orbit-selected strong{font:650 18px sans-serif;color:#ecf4e9}
+.orbit-card dl{margin:8px 0 0}
+.orbit-card dl>div{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #203126}
+.orbit-card dt{font:550 9px/1.5 ui-monospace,monospace;color:#8ca18f;letter-spacing:.03em}
+.orbit-card dd{margin:0;text-align:right;font:650 11px/1.5 ui-monospace,monospace;color:#dfeadd}
+.orbit-footer{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;padding:13px 20px;color:#7d9180;background:#050907;font:500 9px/1.6 ui-monospace,monospace;letter-spacing:.04em}
+.orbit-loading,.cosmic-error{display:flex;min-height:360px;align-items:center;justify-content:center;flex-direction:column;gap:20px;text-align:center;color:#d8e3d7;font:600 12px ui-monospace,monospace;letter-spacing:.08em}
+.orbit-loader{border:1px solid #5f755f;border-top:2px solid #ff845e;width:100px;height:100px;border-radius:50%;animation:orbit-loader-spin 3s linear infinite}
+@keyframes orbit-loader-spin{to{transform:rotate(360deg)}}
+.cosmic-error{padding:30px;font-family:Manrope,sans-serif;letter-spacing:0}
+.cosmic-error button{border:1px solid #83543b;background:#20120b;color:#ff9976;border-radius:8px;padding:11px 18px;cursor:pointer}
+@media(max-width:1050px){
+.orbit-cards{grid-template-columns:1fr 1fr}.orbit-card:nth-child(3){grid-column:1/-1;max-height:none}
+.orbit-header{padding:18px}.orbit-kicker{font-size:23px}.orbit-stage{aspect-ratio:1.35/1}
+}
+@media(max-width:720px){
+#cosmic-orbit{margin:0 -8px 18px;border-radius:10px}
+.orbit-header{align-items:flex-start;gap:13px;padding:17px 14px;flex-direction:column}
+.orbit-kicker{font-size:19px;letter-spacing:.14em}.orbit-header small{font-size:8px;letter-spacing:.11em}
+.orbit-heading-links{width:100%;justify-content:space-between}
+.orbit-heading-links>span{font-size:9px}
+.orbit-metrics{grid-template-columns:1fr 1fr}
+.orbit-metrics>div{padding:12px 11px;border-bottom:1px solid #26362b}
+.orbit-metrics strong{font-size:11px}
+.orbit-metrics>div:nth-child(2){border-right:0}.orbit-metrics>div:nth-child(3),.orbit-metrics>div:nth-child(4){border-bottom:0}
+.orbit-stage{aspect-ratio:1/1;min-height:320px;max-height:none}
+.orbit-corner{font-size:8px;top:12px!important}.orbit-corner.left{left:10px}.orbit-corner.right{right:10px}
+.orbit-floating{bottom:9px;right:9px;padding:7px 9px;max-width:60%}.orbit-floating strong{font-size:10px}.orbit-floating span{font-size:9px}
+.orbit-controls{padding:14px}.orbit-controls p{font-size:9px}
+.orbit-cards{grid-template-columns:1fr}.orbit-card{max-height:none;padding:16px}.orbit-card:nth-child(3){grid-column:auto}
+.orbit-footer{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){.orbit-loader{animation:none}}
