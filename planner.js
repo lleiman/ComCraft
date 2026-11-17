@@ -342,7 +342,9 @@ function setCalendarRail(value){
  calRailCollapsed=!!value;persistLayoutPreference(CAL_RAIL_KEY,calRailCollapsed);
  const shell=document.getElementById('v10-workspace'),button=shell?.querySelector('[data-v10-rail-toggle]');
  if(!shell||!button)return;
+ const changed=shell.classList.contains('v10-calendar-closed')!==calRailCollapsed;
  shell.classList.toggle('v10-calendar-closed',calRailCollapsed);
+ if(changed)requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
  button.setAttribute('aria-expanded',String(!calRailCollapsed));
  button.setAttribute('aria-label',calRailCollapsed?'Развернуть календарь':'Свернуть календарь');
  button.setAttribute('title',calRailCollapsed?'Развернуть календарь':'Свернуть календарь');
@@ -353,7 +355,9 @@ function setCalendarRail(value){
 }
 function setPrimaryRail(value){
  primaryRailCollapsed=!!value;persistLayoutPreference(MAIN_RAIL_KEY,primaryRailCollapsed);
+ const changed=document.body.classList.contains('v10-primary-closed')!==primaryRailCollapsed;
  document.body.classList.toggle('v10-primary-closed',primaryRailCollapsed);
+ if(changed)requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
  const button=document.querySelector('[data-v10-primary-toggle]');
  if(button){
   button.setAttribute('aria-expanded',String(!primaryRailCollapsed));
