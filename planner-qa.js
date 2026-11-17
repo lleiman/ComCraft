@@ -32,6 +32,9 @@
       record("calendar_loaded",await waitFor(()=>document.querySelector("#v5-forecast .v7-story")));
       const workspace=document.getElementById("v10-workspace"),toggle=workspace?.querySelector("[data-v10-rail-toggle]");
       record("reduced_calendar_rail",!!workspace&&!!toggle&&!!workspace.querySelector(".v10-main #cosmic-orbit")&&!!workspace.querySelector(".v10-calendar-rail #calendar-grid"));
+      record("orbit_aspect_legend_visible",!!workspace?.querySelector(".v10-main #cosmic-orbit .orbit-legend"));
+      const railWidth=workspace?.querySelector(".v10-calendar-rail")?.getBoundingClientRect().width||0;
+      record("calendar_rail_width_reasonable",window.innerWidth<=850||railWidth<=275,"width_px="+Math.round(railWidth));
       const originalClosed=workspace?.classList.contains("v10-calendar-closed");
       if(toggle){
        toggle.click();
