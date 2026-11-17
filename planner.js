@@ -382,6 +382,7 @@ function setupPrimaryRail(){
  setPrimaryRail(primaryRailCollapsed);
 }
 function organizeWorkspace(){
+ document.body.classList.add('cosmic-mode');
  const previous=document.getElementById('v10-workspace');
  if(previous){setCalendarRail(calRailCollapsed);return;}
  const old=document.querySelector('.v3-workbench');
