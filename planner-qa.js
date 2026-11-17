@@ -30,6 +30,18 @@
   (async()=>{
     try{
       record("calendar_loaded",await waitFor(()=>document.querySelector("#v5-forecast .v7-story")));
+      record("orbit_ephemeris_loads",await waitFor(()=>window.IYTN_COSMIC?.getTelemetry()?.planets?.length>=9,16000));
+      const scene=document.querySelector("#cosmic-orbit canvas"),telemetry=window.IYTN_COSMIC?.getTelemetry();
+      record("orbit_canvas_visible",!!scene&&scene.width>300&&scene.height>200);
+      record("orbit_actual_aspects",!!telemetry&&telemetry.aspects.every(a=>a.orb>=0&&a.orb<=5.5));
+      record("orbit_real_geocentric_positions",!!telemetry&&telemetry.planets.length>=9&&telemetry.planets.every(p=>p.longitude>=0&&p.longitude<360));
+      const scrub=document.querySelector("#cosmic-orbit [data-orbit-time]");
+      if(scrub){scrub.value="18";scrub.dispatchEvent(new Event("input",{bubbles:true}));}
+      record("orbit_time_scrubber",document.querySelector("#cosmic-orbit [data-orbit-clock]")?.textContent?.startsWith("18:"));
+      const selectable=document.querySelector("#cosmic-orbit [data-orbit-planet='Mars']");
+      if(selectable)selectable.click();
+      record("orbit_planet_select",!!document.querySelector("#cosmic-orbit [data-orbit-planet='Mars'][aria-pressed='true']"));
+
       record("day_story_has_specific_symbolism",!!document.querySelector("#v5-forecast .v9-meanings"));
       record("six_recommendation_domains",document.querySelectorAll("#v5-forecast .v7-domain").length===6);
       record("huangli_section_visible",!!document.querySelector("#v5-forecast .v7-almanac"));
@@ -43,6 +55,8 @@
       const startTitle=document.querySelector("#v5-forecast .v7-head h2")?.textContent||"";
       document.querySelector("#v5-forecast [data-v7-shift='1']")?.click();
       record("next_date_renders",await waitFor(()=>{const title=document.querySelector("#v5-forecast .v7-head h2")?.textContent||"";return title&&title!==startTitle},6000));
+      const expectedOrbitDate=window.IYTN_COSMIC?.getTelemetry()?.date;
+      record("orbit_refreshes_on_date",await waitFor(()=>{const x=window.IYTN_COSMIC?.getTelemetry();return x&&x.date&&x.date!==telemetry?.date;},10000),"new date="+expectedOrbitDate);
       document.querySelector("#v5-forecast [data-v7-shift='-1']")?.click();
       record("previous_date_restores",await waitFor(()=>document.querySelector("#v5-forecast .v7-head h2")?.textContent===startTitle,6000));
       const beforePeriod=localStorage.getItem("iytn_forecast_horizon_v1");
