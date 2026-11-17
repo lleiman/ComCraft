@@ -306,3 +306,12 @@ body.cosmic-mode .v10-rail-header{background:#060b08}
 body.cosmic-mode .v10-calendar-more .v3-month-highlights{color:#d6e2d5}
 body.cosmic-mode .orbit-card{background:#070a08}
 body.cosmic-mode .orbit-aspect-list button.tense{border-left:2px solid #df6a48}
+
+
+/* v10b: small factual key for the orbital drawing. */
+.orbit-legend{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:center;padding:10px 17px;background:#060b08;border-top:1px solid #29392e;border-bottom:1px solid #26372d;color:#d4e0d3;font:600 9px/1.55 ui-monospace,monospace;letter-spacing:.04em}
+.orbit-legend span{display:flex;gap:8px;align-items:center}
+.orbit-legend-line{display:inline-block;width:23px;height:2px;background:#dce5dc;flex:none}
+.orbit-legend-line.alert{background:#fa805a}
+.orbit-legend-dot{width:7px;height:7px;border:1px solid #f0f5eb;border-radius:100%;background:#212f24;flex:none}
+@media(max-width:680px){.orbit-legend{padding:10px 12px;gap:8px 12px;font-size:8px}}
