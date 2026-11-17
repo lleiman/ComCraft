@@ -30,6 +30,19 @@
   (async()=>{
     try{
       record("calendar_loaded",await waitFor(()=>document.querySelector("#v5-forecast .v7-story")));
+      const workspace=document.getElementById("v10-workspace"),toggle=workspace?.querySelector("[data-v10-rail-toggle]");
+      record("reduced_calendar_rail",!!workspace&&!!toggle&&!!workspace.querySelector(".v10-main #cosmic-orbit")&&!!workspace.querySelector(".v10-calendar-rail #calendar-grid"));
+      const originalClosed=workspace?.classList.contains("v10-calendar-closed");
+      if(toggle){
+       toggle.click();
+       record("calendar_collapse_toggle",workspace.classList.contains("v10-calendar-closed")!==originalClosed);
+       record("forecast_remains_visible_when_collapsed",!!workspace.querySelector(".v10-main #v5-forecast"));
+       toggle.click();
+       record("calendar_reopens_to_previous_state",workspace.classList.contains("v10-calendar-closed")===originalClosed);
+       record("calendar_toggle_aria",toggle.getAttribute("aria-expanded")===String(!originalClosed));
+      }
+      record("global_menu_collapse",!!document.querySelector("[data-v10-primary-toggle]"));
+      record("supplementary_calendars_behind_disclosure",!!document.querySelector(".v10-deep-systems #astro-day")&&!!document.querySelector(".v10-deep-systems #iytn-google-calendar"));
       record("orbit_ephemeris_loads",await waitFor(()=>window.IYTN_COSMIC?.getTelemetry()?.planets?.length>=9,16000));
       const scene=document.querySelector("#cosmic-orbit canvas"),telemetry=window.IYTN_COSMIC?.getTelemetry();
       record("orbit_canvas_visible",!!scene&&scene.width>300&&scene.height>200);
